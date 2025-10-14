@@ -138,6 +138,8 @@
         form.addEventListener('submit', function (e) {
             e.preventDefault();
 
+            console.log('📝 Formulaire soumis');
+
             // Stocker les données temporairement
             const formData = new FormData(form);
             const data = {
@@ -146,13 +148,28 @@
                 today_date: formData.get('today_date')
             };
 
+            console.log('💾 Données à stocker:', data);
+
             // Stocker dans localStorage pour la question 0
             localStorage.setItem('pending_session_data', JSON.stringify(data));
+            console.log('✅ Données stockées dans localStorage');
+
+            // Vérifier le stockage
+            const stored = localStorage.getItem('pending_session_data');
+            console.log('🔍 Vérification:', stored);
 
             // Rediriger vers la question 0
+            console.log('🔄 Redirection vers /question0...');
             window.location.href = '/question0';
         });
     }
+
+    // Test de redirection manuelle (pour debug)
+    window.testRedirect = function () {
+        console.log('Test de redirection manuelle');
+        window.location.href = '/question0';
+    };
+    console.log('💡 Pour tester manuellement, tapez: testRedirect()');
 
     function showHelp(type) {
         let message = '';
