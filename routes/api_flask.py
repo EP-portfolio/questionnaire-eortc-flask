@@ -268,23 +268,38 @@ def get_audio(question_num):
 
 @api_bp.route('/test_audio')
 def test_audio():
-    """Servir un fichier audio de test simple"""
+    """Servir un fichier audio de test pré-généré"""
     try:
-        # Créer un fichier audio de test simple si il n'existe pas
-        test_audio_path = Path('static/audio_cache/test_audio.wav')
-        test_audio_path.parent.mkdir(parents=True, exist_ok=True)
+        # Utiliser le fichier audio de test pré-généré (déjà créé)
+        test_audio_path = Path('static/audio_cache/gemini-2.5-pro-preview-tts_Achernar')
         
-        if not test_audio_path.exists():
-            # Créer un fichier audio de test simple
+        # Chercher le fichier de test dans le cache
+        if test_audio_path.exists():
+            # Lister tous les fichiers .wav dans le cache
+            wav_files = list(test_audio_path.glob('*.wav'))
+            if wav_files:
+                # Prendre le premier fichier (généralement le test audio)
+                return send_file(
+                    str(wav_files[0]),
+                    mimetype='audio/wav',
+                    as_attachment=False
+                )
+        
+        # Fallback : créer un fichier audio très simple
+        fallback_path = Path('static/audio_cache/test_simple.wav')
+        fallback_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        if not fallback_path.exists():
             import wave
             import struct
             import math
             
-            sample_rate = 44100
-            duration = 2
+            # Fichier très court et simple
+            sample_rate = 22050
+            duration = 0.3  # Très court
             frequency = 440
             
-            with wave.open(str(test_audio_path), 'wb') as wav_file:
+            with wave.open(str(fallback_path), 'wb') as wav_file:
                 wav_file.setnchannels(1)
                 wav_file.setsampwidth(2)
                 wav_file.setframerate(sample_rate)
@@ -296,7 +311,7 @@ def test_audio():
                     wav_file.writeframes(struct.pack('<h', pcm_sample))
         
         return send_file(
-            str(test_audio_path),
+            str(fallback_path),
             mimetype='audio/wav',
             as_attachment=False
         )
