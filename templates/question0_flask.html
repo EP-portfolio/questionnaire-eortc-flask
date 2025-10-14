@@ -1,185 +1,490 @@
 {% extends "base_flask.html" %}
 
-{% block title %}Accueil - Questionnaire EORTC QLQ-C30{% endblock %}
+{% block title %}Question 0 - Tests Audio et Micro{% endblock %}
 
 {% block content %}
-<div class="accueil-page">
-    <!-- Message de bienvenue -->
+<div class="permission-page">
+    <!-- Titre principal -->
     <div class="welcome-box">
         <h1 class="welcome-title">
             <i class="fas fa-hospital"></i>
             Questionnaire EORTC QLQ-C30
         </h1>
-        <p class="welcome-subtitle">Bienvenue ! Ce questionnaire évalue votre qualité de vie.</p>
+        <p class="welcome-subtitle">Question 0 - Configuration audio et microphone</p>
     </div>
 
-    <!-- Formulaire informations personnelles -->
-    <div class="form-section">
-        <h2 class="form-title">
-            <i class="fas fa-user"></i>
-            Informations personnelles
-        </h2>
+    <!-- Informations mode continu -->
+    <div class="info-box">
+        <h3 class="info-title">
+            <i class="fas fa-check-circle"></i>
+            Mode continu activé
+        </h3>
+        <p class="info-text">
+            <strong>→ 1 SEUL clic au démarrage</strong><br>
+            <strong>→ Parlez naturellement pour chaque question</strong><br>
+            <strong>→ Passage automatique à la question suivante</strong><br>
+            <strong>→ Boutons disponibles si besoin</strong>
+        </p>
+    </div>
 
-        <form id="personal-form" class="personal-form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="initials" class="form-label">
-                        <i class="fas fa-signature"></i>
-                        Initiales
-                    </label>
-                    <input type="text" id="initials" name="initials" class="form-input" maxlength="10"
-                        placeholder="Ex: A B" required>
-                    <small class="form-help">Vos initiales (ex: A B pour André Bernard)</small>
+    <!-- Tests recommandés -->
+    <div class="tests-section">
+        <div class="info-box">
+            <h3 class="info-title">
+                <i class="fas fa-clipboard-check"></i>
+                Tests recommandés
+            </h3>
+            <p class="info-text">
+                <strong>1. Testez l'audio</strong> pour vérifier que vous entendez les questions<br>
+                <strong>2. Cochez la case</strong> pour confirmer que vous avez entendu le test<br>
+                <strong>3. Testez le microphone</strong> pour valider le fonctionnement<br>
+                <strong>4. Autorisez l'accès</strong> au micro dans le navigateur
+            </p>
+        </div>
+
+        <div class="test-buttons">
+            <div class="test-group">
+                <div class="test-box">
+                    <h4 class="test-title">
+                        <i class="fas fa-volume-up"></i>
+                        Audio
+                    </h4>
+                    <p class="test-desc">Les questions seront lues à voix haute.</p>
+                    <button class="test-btn" id="test-audio-btn" onclick="testAudio()">
+                        <i class="fas fa-play"></i>
+                        Tester l'audio
+                    </button>
                 </div>
 
-                <div class="form-group">
-                    <label for="birth_date" class="form-label">
-                        <i class="fas fa-calendar-alt"></i>
-                        Date de naissance
-                    </label>
-                    <input type="date" id="birth_date" name="birth_date" class="form-input" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="today_date" class="form-label">
-                        <i class="fas fa-calendar-check"></i>
-                        Date d'aujourd'hui
-                    </label>
-                    <input type="date" id="today_date" name="today_date" class="form-input" required>
+                <div class="test-box">
+                    <h4 class="test-title">
+                        <i class="fas fa-microphone"></i>
+                        Microphone
+                    </h4>
+                    <p class="test-desc">Validation du fonctionnement.</p>
+                    <button class="test-btn" id="test-micro-btn" onclick="testMicrophone()">
+                        <i class="fas fa-microphone"></i>
+                        Tester le micro
+                    </button>
                 </div>
             </div>
+        </div>
 
-            <div class="form-options">
-                <div class="checkbox-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="consent" name="consent" required>
-                        <span class="checkmark"></span>
-                        <i class="fas fa-shield-alt"></i>
-                        J'accepte le traitement anonyme de mes données (RGPD)
-                    </label>
-                </div>
+        <!-- Case à cocher pour validation audio -->
+        <div class="audio-confirmation" id="audio-confirmation" style="display: none;">
+            <div class="checkbox-validation">
+                <label class="checkbox-label-large">
+                    <input type="checkbox" id="audio-confirmed" name="audio_confirmed">
+                    <span class="checkmark-large"></span>
+                    <span class="checkbox-text">Cochez si vous avez entendu le test audio</span>
+                </label>
             </div>
+        </div>
 
-            <div class="form-actions">
-                <button type="submit" class="submit-btn" id="submit-btn" disabled>
-                    <i class="fas fa-arrow-right"></i>
-                    CONTINUER
+        <!-- Test microphone -->
+        <div class="microphone-test" id="microphone-test" style="display: none;">
+            <div class="test-info">
+                <h4>Test : Cliquez, parlez, puis attendez 2 secondes</h4>
+            </div>
+            <div class="recorder-container">
+                <button class="recorder-btn" id="recorder-btn" onclick="startRecording()">
+                    <i class="fas fa-microphone"></i>
+                    <span>🎤 Tester</span>
                 </button>
             </div>
-        </form>
-    </div>
+            <div class="recording-feedback" id="recording-feedback" style="display: none;">
+                <p class="feedback-text"></p>
+            </div>
+            <button class="cancel-btn" onclick="cancelMicrophoneTest()">
+                <i class="fas fa-times"></i>
+                Annuler
+            </button>
+        </div>
 
-    <!-- Aide contextuelle -->
-    <div class="help-section">
-        <h3 class="help-title">
-            <i class="fas fa-question-circle"></i>
-            Aide
-        </h3>
-        <div class="help-buttons">
-            <button class="help-btn" onclick="showHelp('initials')">
-                <i class="fas fa-signature"></i>
-                Initiales
-            </button>
-            <button class="help-btn" onclick="showHelp('birth')">
-                <i class="fas fa-calendar-alt"></i>
-                Naissance
-            </button>
-            <button class="help-btn" onclick="showHelp('today')">
-                <i class="fas fa-calendar-check"></i>
-                Aujourd'hui
+        <!-- Résultats des tests -->
+        <div class="test-results" id="test-results" style="display: none;">
+            <div class="result-item" id="audio-result" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <span>Audio fonctionne !</span>
+            </div>
+            <div class="result-item" id="micro-result" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <span>Microphone fonctionne !</span>
+            </div>
+        </div>
+
+        <!-- Bouton continuer -->
+        <div class="continue-section">
+            <button class="continue-btn" id="continue-btn" onclick="continueToQuestionnaire()" disabled>
+                <i class="fas fa-arrow-right"></i>
+                Continuer
             </button>
         </div>
     </div>
 </div>
 
 <script>
-    // Initialisation
+    let audioConfirmed = false;
+    let microTested = false;
+    let isRecording = false;
+    let recognition = null;
+
     document.addEventListener('DOMContentLoaded', function () {
-        // Définir la date d'aujourd'hui par défaut
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('today_date').value = today;
+        console.log('✅ Page Question 0 chargée');
 
-        // Définir une date de naissance par défaut (1970)
-        document.getElementById('birth_date').value = '1970-01-01';
-
-        // Forcer le mode Chrome (toujours mode continu)
-        localStorage.setItem('browser_type', 'chrome');
-
-        // Gérer le formulaire
-        setupFormHandlers();
+        // Écouter la case à cocher
+        const audioCheckbox = document.getElementById('audio-confirmed');
+        if (audioCheckbox) {
+            audioCheckbox.addEventListener('change', function () {
+                audioConfirmed = this.checked;
+                checkContinueButton();
+            });
+        }
     });
 
-    function setupFormHandlers() {
-        const form = document.getElementById('personal-form');
-        const submitBtn = document.getElementById('submit-btn');
-        const consentCheckbox = document.getElementById('consent');
+    function testAudio() {
+        console.log('🔊 Test audio lancé');
+        const btn = document.getElementById('test-audio-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lecture...';
 
-        // Gérer la validation du formulaire
-        function validateForm() {
-            const initials = document.getElementById('initials').value.trim();
-            const birthDate = document.getElementById('birth_date').value;
-            const todayDate = document.getElementById('today_date').value;
-            const consent = consentCheckbox.checked;
+        // Test audio avec fichier serveur
+        const audio = new Audio('/api/test_audio');
 
-            if (initials && birthDate && todayDate && consent) {
-                submitBtn.disabled = false;
-                submitBtn.classList.add('enabled');
+        audio.addEventListener('canplaythrough', () => {
+            console.log('Audio prêt');
+        });
+
+        audio.addEventListener('ended', () => {
+            console.log('Audio terminé');
+            showTestResult('audio-result');
+            btn.innerHTML = '<i class="fas fa-check"></i> Audio testé';
+
+            // Afficher la case à cocher
+            document.getElementById('audio-confirmation').style.display = 'block';
+        });
+
+        audio.addEventListener('error', (e) => {
+            console.log('Erreur audio, fallback vers synthèse vocale');
+
+            // Fallback vers l'API de synthèse vocale du navigateur
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(
+                    'Ceci est un test audio. Si vous entendez ce message, l\'audio fonctionne correctement.'
+                );
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+
+                utterance.onend = () => {
+                    showTestResult('audio-result');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Audio testé';
+                    document.getElementById('audio-confirmation').style.display = 'block';
+                };
+
+                utterance.onerror = () => {
+                    btn.innerHTML = '<i class="fas fa-times"></i> Erreur';
+                    btn.disabled = false;
+                    alert('Erreur : Impossible de jouer l\'audio. Vérifiez vos paramètres.');
+                };
+
+                speechSynthesis.speak(utterance);
             } else {
-                submitBtn.disabled = true;
-                submitBtn.classList.remove('enabled');
+                btn.innerHTML = '<i class="fas fa-times"></i> Erreur';
+                btn.disabled = false;
+                alert('Erreur : Impossible de jouer l\'audio.');
             }
-        }
+        });
 
-        // Écouter les changements
-        form.addEventListener('input', validateForm);
-        form.addEventListener('change', validateForm);
+        // Essayer de jouer l'audio
+        audio.play().catch((error) => {
+            console.log('Erreur lecture, fallback:', error);
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(
+                    'Ceci est un test audio. Si vous entendez ce message, l\'audio fonctionne correctement.'
+                );
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.8;
 
-        // Gérer la soumission
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
+                utterance.onend = () => {
+                    showTestResult('audio-result');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Audio testé';
+                    document.getElementById('audio-confirmation').style.display = 'block';
+                };
 
-            // Stocker les données temporairement
-            const formData = new FormData(form);
-            const data = {
-                initials: formData.get('initials'),
-                birth_date: formData.get('birth_date'),
-                today_date: formData.get('today_date')
-            };
-
-            // Stocker dans localStorage pour la question 0
-            localStorage.setItem('pending_session_data', JSON.stringify(data));
-
-            // Rediriger vers la question 0
-            window.location.href = '/question0';
+                speechSynthesis.speak(utterance);
+            }
         });
     }
 
-    function showHelp(type) {
-        let message = '';
+    function testMicrophone() {
+        console.log('🎤 Test microphone lancé');
 
-        switch (type) {
-            case 'initials':
-                message = 'Saisissez vos initiales. Par exemple, A B pour André Bernard.';
-                break;
-            case 'birth':
-                message = 'Sélectionnez votre date de naissance dans le calendrier.';
-                break;
-            case 'today':
-                const today = new Date();
-                const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-                    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-                message = `La date est le ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}.`;
-                break;
+        // Afficher l'interface de test
+        document.getElementById('microphone-test').style.display = 'block';
+    }
+
+    function startRecording() {
+        if (isRecording) return;
+
+        console.log('Démarrage enregistrement');
+
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert('Erreur : La reconnaissance vocale n\'est pas disponible sur ce navigateur.');
+            return;
         }
 
-        // Utiliser l'API de synthèse vocale si disponible
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(message);
-            utterance.lang = 'fr-FR';
-            speechSynthesis.speak(utterance);
-        } else {
-            alert(message);
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+
+        recognition.lang = 'fr-FR';
+        recognition.continuous = true;
+        recognition.interimResults = false;
+
+        const btn = document.getElementById('recorder-btn');
+        const feedback = document.getElementById('recording-feedback');
+
+        recognition.onstart = () => {
+            console.log('Reconnaissance démarrée');
+            btn.innerHTML = '<i class="fas fa-stop"></i><span>🔴 Enregistrement...</span>';
+            btn.classList.add('recording');
+            isRecording = true;
+
+            feedback.style.display = 'block';
+            feedback.querySelector('.feedback-text').textContent = '🎤 Parlez maintenant... (attendez 2 secondes après)';
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript;
+            console.log('Résultat:', transcript);
+
+            feedback.querySelector('.feedback-text').textContent = '✅ Message capté : "' + transcript + '"';
+            feedback.querySelector('.feedback-text').style.color = '#4CAF50';
+
+            showTestResult('micro-result');
+            microTested = true;
+
+            setTimeout(() => {
+                stopRecording();
+                checkContinueButton();
+            }, 1500);
+        };
+
+        recognition.onerror = (event) => {
+            console.log('Erreur reconnaissance:', event.error);
+
+            if (event.error === 'not-allowed') {
+                alert('Erreur : Vous devez autoriser l\'accès au microphone dans votre navigateur.');
+            } else if (event.error === 'no-speech') {
+                feedback.querySelector('.feedback-text').textContent = '⚠️ Aucune parole détectée. Réessayez en parlant plus fort.';
+                feedback.querySelector('.feedback-text').style.color = '#FF9800';
+            } else {
+                alert('Erreur microphone : ' + event.error);
+            }
+
+            stopRecording();
+        };
+
+        recognition.onend = () => {
+            console.log('Reconnaissance terminée');
+        };
+
+        try {
+            recognition.start();
+
+            // Timeout après 10 secondes
+            setTimeout(() => {
+                if (recognition && isRecording && !microTested) {
+                    recognition.stop();
+                    feedback.querySelector('.feedback-text').textContent = '⏱️ Temps écoulé. Cliquez à nouveau pour réessayer.';
+                    feedback.querySelector('.feedback-text').style.color = '#FF9800';
+                }
+            }, 10000);
+        } catch (error) {
+            console.log('Erreur démarrage:', error);
+            alert('Erreur : ' + error.message);
         }
     }
+
+    function stopRecording() {
+        if (recognition) {
+            try {
+                recognition.stop();
+            } catch (e) {
+                console.log('Erreur arrêt:', e);
+            }
+        }
+
+        const btn = document.getElementById('recorder-btn');
+        btn.innerHTML = '<i class="fas fa-microphone"></i><span>🎤 Tester</span>';
+        btn.classList.remove('recording');
+        isRecording = false;
+    }
+
+    function cancelMicrophoneTest() {
+        stopRecording();
+        document.getElementById('microphone-test').style.display = 'none';
+    }
+
+    function showTestResult(resultId) {
+        document.getElementById(resultId).style.display = 'block';
+        document.getElementById('test-results').style.display = 'block';
+    }
+
+    function checkContinueButton() {
+        const continueBtn = document.getElementById('continue-btn');
+
+        console.log('Vérification:', { audioConfirmed, microTested });
+
+        if (audioConfirmed && microTested) {
+            continueBtn.disabled = false;
+            continueBtn.classList.add('enabled');
+            console.log('✅ Bouton continuer activé');
+        }
+    }
+
+    function continueToQuestionnaire() {
+        console.log('🚀 Création de la session...');
+
+        // Récupérer les données de session stockées
+        const sessionData = JSON.parse(localStorage.getItem('pending_session_data'));
+
+        if (!sessionData) {
+            alert('Erreur : Données de session manquantes');
+            window.location.href = '/';
+            return;
+        }
+
+        const continueBtn = document.getElementById('continue-btn');
+        continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création de la session...';
+        continueBtn.disabled = true;
+
+        // Créer la session via l'API
+        const data = {
+            ...sessionData,
+            audio_enabled: true,
+            mode: 'Continu (Web Speech)'
+        };
+
+        console.log('Données session:', data);
+
+        fetch('/api/start_session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Résultat:', result);
+
+                if (result.success) {
+                    // Stocker l'ID de session
+                    localStorage.setItem('session_id', result.session_id);
+                    localStorage.setItem('audio_tested', 'true');
+                    localStorage.setItem('micro_tested', 'true');
+
+                    // Nettoyer les données temporaires
+                    localStorage.removeItem('pending_session_data');
+
+                    console.log('✅ Session créée:', result.session_id);
+
+                    // Rediriger vers le questionnaire
+                    window.location.href = `/questionnaire?session_id=${result.session_id}`;
+                } else {
+                    throw new Error(result.error || 'Erreur création session');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur : ' + error.message);
+
+                continueBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Continuer';
+                continueBtn.disabled = false;
+            });
+    }
 </script>
+
+<style>
+    /* Styles spécifiques Question 0 */
+    .audio-confirmation {
+        margin: 2rem 0;
+        padding: 2rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 2px solid #4CAF50;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .checkbox-validation {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .checkbox-label-large {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 1.2rem;
+        font-weight: 500;
+        padding: 1rem;
+    }
+
+    .checkbox-label-large input[type="checkbox"] {
+        width: 28px;
+        height: 28px;
+        margin-right: 1rem;
+        cursor: pointer;
+        accent-color: #4CAF50;
+    }
+
+    .checkbox-text {
+        color: #333;
+    }
+
+    .recording-feedback {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #fff3cd;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .feedback-text {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #856404;
+    }
+
+    .recorder-btn.recording {
+        background: #f44336;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.7;
+        }
+    }
+</style>
 {% endblock %}
