@@ -394,3 +394,51 @@ def health():
         'timestamp': datetime.datetime.now().isoformat(),
         'audio_available': current_app.audio_handler is not None
     })
+
+@api_bp.route('/diagnostic')
+def diagnostic():
+    """Diagnostic complet de l'application"""
+    import os
+    from pathlib import Path
+    
+    # Variables d'environnement
+    env_vars = {
+        'SECRET_KEY': '✅' if os.environ.get('SECRET_KEY') else '❌',
+        'GOOGLE_CLOUD_API_KEY': '✅' if os.environ.get('GOOGLE_CLOUD_API_KEY') else '❌',
+        'FLASK_DEBUG': os.environ.get('FLASK_DEBUG', 'NON DÉFINIE'),
+        'AUDIO_ENABLED': os.environ.get('AUDIO_ENABLED', 'NON DÉFINIE'),
+    }
+    
+    # Structure des dossiers
+    folders = {
+        'data': Path('data').exists(),
+        'static': Path('static').exists(),
+        'templates': Path('templates').exists(),
+        'models': Path('models').exists(),
+        'routes': Path('routes').exists(),
+    }
+    
+    # Base de données
+    db_path = Path('data/responses.db')
+    db_status = {
+        'exists': db_path.exists(),
+        'size': db_path.stat().st_size if db_path.exists() else 0
+    }
+    
+    if db_path.exists():
+        try:
+            import sqlite3
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM sessions")
+                sessions_count = cursor.fetchone()[0]
+                db_status['sessions'] = sessions_count
+        except Exception as e:
+            db_status['error'] = str(e)
+    
+    return jsonify({
+        'environment': env_vars,
+        'folders': folders,
+        'database': db_status,
+        'timestamp': datetime.datetime.now().isoformat()
+    })
