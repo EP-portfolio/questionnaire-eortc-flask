@@ -2,6 +2,7 @@
  * Gestionnaire de reconnaissance vocale pour l'application Flask
  * Support Web Speech API (Chrome/Edge) et fallback (Firefox/Safari)
  * Version corrigée : arrêt automatique de l'audio quand l'utilisateur parle
+ * + Filtrage des résultats parasites (Solution 3)
  */
 
 class SpeechRecognitionManager {
@@ -118,6 +119,43 @@ class SpeechRecognitionManager {
     handleSpeechResult(transcript, confidence) {
         console.log('DEBUG: handleSpeechResult appelé avec:', transcript);
 
+        // ============================================
+        // 🛡️ SOLUTION 3 : FILTRAGE DES RÉSULTATS
+        // ============================================
+
+        // Nettoyer le transcript (trim)
+        const cleanTranscript = transcript.trim();
+
+        // 1️⃣ FILTRE : Rejeter si le texte contient "question" suivi d'un chiffre
+        // Cela signifie que le micro a capté l'audio de la question
+        const questionPattern = /question\s+\d+/i;
+        if (questionPattern.test(cleanTranscript)) {
+            console.log('⚠️ REJETÉ : Texte contient "question X" - probablement l\'audio de la question');
+            console.log(`   Texte rejeté : "${cleanTranscript}"`);
+            return; // Ignorer ce résultat
+        }
+
+        // 2️⃣ FILTRE : Rejeter si le texte est trop long (> 50 caractères)
+        // Les réponses valides sont courtes : "beaucoup", "pas du tout", "3", etc.
+        if (cleanTranscript.length > 50) {
+            console.log(`⚠️ REJETÉ : Texte trop long (${cleanTranscript.length} caractères)`);
+            console.log(`   Texte rejeté : "${cleanTranscript.substring(0, 60)}..."`);
+            return; // Ignorer ce résultat
+        }
+
+        // 3️⃣ FILTRE : Rejeter si le texte est vide ou ne contient que des espaces
+        if (cleanTranscript.length === 0) {
+            console.log('⚠️ REJETÉ : Texte vide');
+            return;
+        }
+
+        // ✅ Le texte a passé tous les filtres
+        console.log(`✅ ACCEPTÉ : "${cleanTranscript}" (${cleanTranscript.length} caractères)`);
+
+        // ============================================
+        // FIN SOLUTION 3
+        // ============================================
+
         // ✅ CORRECTION : Arrêter l'audio de la question dès que l'utilisateur parle
         if (window.stopAudioOnSpeech) {
             console.log('🔇 Détection de parole - Arrêt de l\'audio de la question');
@@ -125,10 +163,10 @@ class SpeechRecognitionManager {
         }
 
         // Afficher le transcript
-        this.updateTranscript(transcript);
+        this.updateTranscript(cleanTranscript);
 
         // Envoyer au backend pour traitement
-        this.processVoiceResponse(transcript);
+        this.processVoiceResponse(cleanTranscript);
     }
 
     handleSpeechError(error) {

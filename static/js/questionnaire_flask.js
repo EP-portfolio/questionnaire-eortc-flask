@@ -1,6 +1,7 @@
 /**
  * Logique principale du questionnaire Flask
  * Version corrigée avec audio automatique, logs détaillés et arrêt audio sur parole
+ * + Accélération audio de 15%
  */
 
 class QuestionnaireManager {
@@ -245,6 +246,13 @@ class QuestionnaireManager {
                 this.stopAudio();
 
                 this.currentAudio = new Audio(audioUrl);
+
+                // ============================================
+                // 🚀 ACCÉLÉRATION AUDIO DE 15%
+                // ============================================
+                this.currentAudio.playbackRate = 1.15;
+                console.log('🚀 Vitesse de lecture: 1.15x (accélération de 15%)');
+                // ============================================
 
                 this.currentAudio.onerror = (e) => {
                     console.error('❌ Erreur lecture audio:', e);

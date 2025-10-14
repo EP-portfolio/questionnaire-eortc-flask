@@ -185,8 +185,24 @@ class VoiceRecognitionHandler:
                 print("OK - Reconnu: 2 (un peu)")
                 return 2
 
+            # ============================================
+            # 🆕 NOUVELLES VARIANTES POUR "ASSEZ" (score 3)
+            # ============================================
             if self._contains_word(
-                text, ["assez", "moyennement", "moderement", "plutot"]
+                text,
+                [
+                    "assez",
+                    "moyennement",
+                    "moderement",
+                    "plutot",
+                    # 🆕 Nouvelles variantes ajoutées
+                    "ac",  # "AC"
+                    "asset",  # "asset"
+                    "ah c'est",  # "ah c'est" (avec apostrophe)
+                    "ah cest",  # "ah cest" (sans apostrophe)
+                    "ah ses",  # Variante phonétique supplémentaire
+                    "ah set",  # Variante phonétique supplémentaire
+                ],
             ):
                 print("OK - Reconnu: 3 (assez)")
                 return 3
