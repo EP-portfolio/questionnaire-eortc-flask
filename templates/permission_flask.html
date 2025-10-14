@@ -175,15 +175,68 @@ function selectBrowser(isChrome) {
 }
 
 function testAudio() {
-    // Simuler le test audio
-    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBS13yO/eizEIHWq+8+OWT');
+    // Test audio avec fichier serveur
+    const audio = new Audio('/api/test_audio');
     
-    audio.play().then(() => {
+    audio.addEventListener('canplaythrough', () => {
+        console.log('Audio prêt à être joué');
+    });
+    
+    audio.addEventListener('ended', () => {
         showTestResult('audio-result');
         audioTested = true;
         checkContinueButton();
-    }).catch(() => {
-        alert('Erreur : Impossible de jouer l\'audio. Vérifiez vos paramètres.');
+    });
+    
+    audio.addEventListener('error', (e) => {
+        console.log('Erreur audio:', e);
+        // Fallback vers l'API de synthèse vocale du navigateur
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance('Test audio. Si vous entendez ce message, l\'audio fonctionne correctement.');
+            utterance.lang = 'fr-FR';
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+            
+            utterance.onend = () => {
+                showTestResult('audio-result');
+                audioTested = true;
+                checkContinueButton();
+            };
+            
+            utterance.onerror = () => {
+                alert('Erreur : Impossible de jouer l\'audio. Vérifiez vos paramètres.');
+            };
+            
+            speechSynthesis.speak(utterance);
+        } else {
+            alert('Erreur : Impossible de jouer l\'audio. Vérifiez vos paramètres.');
+        }
+    });
+    
+    // Essayer de jouer l'audio
+    audio.play().catch((error) => {
+        console.log('Erreur de lecture audio:', error);
+        // Fallback vers l'API de synthèse vocale
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance('Test audio. Si vous entendez ce message, l\'audio fonctionne correctement.');
+            utterance.lang = 'fr-FR';
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+            
+            utterance.onend = () => {
+                showTestResult('audio-result');
+                audioTested = true;
+                checkContinueButton();
+            };
+            
+            utterance.onerror = () => {
+                alert('Erreur : Impossible de jouer l\'audio. Vérifiez vos paramètres.');
+            };
+            
+            speechSynthesis.speak(utterance);
+        } else {
+            alert('Erreur : Impossible de jouer l\'audio. Vérifiez vos paramètres.');
+        }
     });
 }
 

@@ -3,7 +3,7 @@ Routes API pour l'application Flask
 Gestion AJAX : sessions, questions, reconnaissance vocale, audio
 """
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, send_file
 import datetime
 import os
 from pathlib import Path
@@ -227,6 +227,44 @@ def get_audio(question_num):
         
     except Exception as e:
         return jsonify({'error': f'Erreur audio: {str(e)}'}), 500
+
+@api_bp.route('/test_audio')
+def test_audio():
+    """Servir un fichier audio de test simple"""
+    try:
+        # Créer un fichier audio de test simple si il n'existe pas
+        test_audio_path = Path('static/audio_cache/test_audio.wav')
+        test_audio_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        if not test_audio_path.exists():
+            # Créer un fichier audio de test simple
+            import wave
+            import struct
+            import math
+            
+            sample_rate = 44100
+            duration = 2
+            frequency = 440
+            
+            with wave.open(str(test_audio_path), 'wb') as wav_file:
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(sample_rate)
+                
+                for i in range(int(sample_rate * duration)):
+                    t = i / sample_rate
+                    sample = math.sin(2 * math.pi * frequency * t)
+                    pcm_sample = int(sample * 32767)
+                    wav_file.writeframes(struct.pack('<h', pcm_sample))
+        
+        return send_file(
+            str(test_audio_path),
+            mimetype='audio/wav',
+            as_attachment=False
+        )
+        
+    except Exception as e:
+        return jsonify({'error': f'Erreur test audio: {str(e)}'}), 500
 
 @api_bp.route('/get_session_data/<session_id>')
 def get_session_data(session_id):
