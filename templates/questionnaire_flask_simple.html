@@ -28,81 +28,18 @@
         </div>
     </div>
 
-    <!-- Question -->
+    <!-- Question (simplifié) -->
     <div class="question-container">
         <div class="question-box" id="question-box">
             <div class="question-number" id="question-number">Question 1</div>
             <div class="question-text" id="question-text"
-                style="white-space: pre-wrap; line-height: 1.6; font-size: 1.1rem;">
+                style="font-size: 1.3rem; font-weight: 500; color: #333; line-height: 1.4;">
                 Chargement de la question...
             </div>
-            <div class="question-speech" id="question-speech"
-                style="margin-top: 1.5rem; padding: 1rem; background: #f0f7ff; border-left: 4px solid #2196F3; border-radius: 4px; display: none;">
-                <strong style="color: #1976D2;">📢 Texte complet (lu par l'audio) :</strong>
-                <div id="question-speech-text" style="margin-top: 0.5rem; white-space: pre-wrap; color: #424242;"></div>
-            </div>
         </div>
     </div>
 
-    <!-- Interface vocale -->
-    <div class="voice-section" id="voice-section">
-        <h3 class="section-title">
-            <i class="fas fa-microphone"></i>
-            Réponse vocale
-        </h3>
-
-        <!-- Mode Web Speech API (Chrome/Edge) -->
-        <div class="web-speech-interface" id="web-speech-interface" style="display: none;">
-            <div class="speech-status" id="speech-status">
-                <div class="status-indicator" id="status-indicator">
-                    <i class="fas fa-microphone-slash"></i>
-                    Micro inactif
-                </div>
-                <div class="status-message" id="status-message">
-                    Cliquez sur le bouton pour commencer l'écoute continue
-                </div>
-            </div>
-
-            <div class="speech-controls">
-                <button class="voice-btn" id="start-listening-btn" onclick="startListening()">
-                    <i class="fas fa-microphone"></i>
-                    Démarrer l'écoute
-                </button>
-                <button class="voice-btn stop-btn" id="stop-listening-btn" onclick="stopListening()"
-                    style="display: none;">
-                    <i class="fas fa-stop"></i>
-                    Arrêter l'écoute
-                </button>
-            </div>
-
-            <div class="speech-feedback" id="speech-feedback" style="display: none;">
-                <div class="feedback-text" id="feedback-text"></div>
-                <div class="feedback-actions" id="feedback-actions"></div>
-            </div>
-        </div>
-
-        <!-- Mode fallback (autres navigateurs) -->
-        <div class="fallback-interface" id="fallback-interface" style="display: none;">
-            <div class="fallback-message">
-                <i class="fas fa-info-circle"></i>
-                Votre navigateur ne supporte pas la reconnaissance vocale continue.
-                Utilisez les boutons de réponse ci-dessous.
-            </div>
-        </div>
-    </div>
-
-    <!-- Réponses manuelles -->
-    <div class="responses-section" id="responses-section">
-        <h3 class="section-title">
-            <i class="fas fa-mouse-pointer"></i>
-            Réponse manuelle
-        </h3>
-        <div class="response-buttons" id="response-buttons">
-            <!-- Les boutons seront générés dynamiquement -->
-        </div>
-    </div>
-
-    <!-- Contrôles audio TOUJOURS visibles et mis en évidence -->
+    <!-- Contrôles audio (mis en évidence) -->
     <div class="audio-controls"
         style="margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
         <button class="audio-btn" id="play-audio-btn" onclick="playQuestionAudio()"
@@ -121,6 +58,17 @@
         </div>
     </div>
 
+    <!-- Réponses manuelles -->
+    <div class="responses-section" id="responses-section" style="margin-top: 2rem;">
+        <h3 class="section-title">
+            <i class="fas fa-mouse-pointer"></i>
+            Réponse manuelle
+        </h3>
+        <div class="response-buttons" id="response-buttons">
+            <!-- Les boutons seront générés dynamiquement -->
+        </div>
+    </div>
+
     <!-- Message spécial pour Q29-30 -->
     <div class="special-message" id="special-message" style="display: none;">
         <div class="message-box">
@@ -129,6 +77,13 @@
             Répondez par "un", "deux", "trois", "quatre", "cinq", "six", ou "sept".
         </div>
     </div>
+
+    <!-- Statut écoute continue (discret) -->
+    <div class="listening-status" id="listening-status"
+        style="position: fixed; bottom: 20px; right: 20px; padding: 1rem 1.5rem; background: rgba(0,0,0,0.8); color: white; border-radius: 8px; display: none; z-index: 1000;">
+        <i class="fas fa-microphone"></i>
+        <span id="listening-text">Écoute active</span>
+    </div>
 </div>
 
 <script src="{{ url_for('static', filename='js/speech_recognition_flask.js') }}"></script>
@@ -136,25 +91,24 @@
     document.addEventListener('DOMContentLoaded', function () {
         console.log('✅ Page questionnaire chargée');
 
-        // FORCER l'activation de l'audio
+        // Forcer l'activation de l'audio
         localStorage.setItem('audio_enabled', 'true');
-        console.log('✅ Audio forcé à: true');
+        console.log('✅ Audio forcé à : true');
 
-        // Vérifier le mode navigateur
-        const browserType = localStorage.getItem('browser_type');
-        const isWebSpeechMode = browserType === 'chrome';
+        // Vérifier le mode navigateur (toujours Chrome maintenant)
+        localStorage.setItem('browser_type', 'chrome');
 
-        // Afficher la bonne interface
-        if (isWebSpeechMode) {
-            document.getElementById('web-speech-interface').style.display = 'block';
-        } else {
-            document.getElementById('fallback-interface').style.display = 'block';
-        }
+        // Initialiser la reconnaissance vocale
+        initSpeechRecognition();
 
-        // Initialiser la reconnaissance vocale si disponible
-        if (isWebSpeechMode) {
-            initSpeechRecognition();
-        }
+        // Démarrer automatiquement l'écoute continue
+        setTimeout(() => {
+            if (window.speechManager) {
+                window.speechManager.startContinuousSpeech();
+                // Afficher le statut
+                document.getElementById('listening-status').style.display = 'block';
+            }
+        }, 1000);
     });
 
     function previousQuestion() {
@@ -166,18 +120,6 @@
     function nextQuestion() {
         if (window.questionnaireManager) {
             window.questionnaireManager.loadQuestion(window.questionnaireManager.currentQuestion + 1);
-        }
-    }
-
-    function startListening() {
-        if (window.speechManager) {
-            window.speechManager.startContinuousSpeech();
-        }
-    }
-
-    function stopListening() {
-        if (window.speechManager) {
-            window.speechManager.stopContinuousSpeech();
         }
     }
 
@@ -202,6 +144,21 @@
 
     .audio-btn:active {
         transform: translateY(0);
+    }
+
+    .question-text {
+        /* Forcer le texte sur une seule ligne si trop long */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Version responsive pour petits écrans */
+    @media (max-width: 768px) {
+        .question-text {
+            white-space: normal;
+            overflow: visible;
+        }
     }
 </style>
 {% endblock %}

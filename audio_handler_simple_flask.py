@@ -1,6 +1,8 @@
 """
 Gestionnaire audio simplifié pour le web (sans pygame ni speech_recognition)
 Version optimisée avec reconnaissance vocale TRÈS améliorée
++ Remplacement "assez" → "plutôt"
++ Désactivation chiffres pour échelle 1-4 (Q1-28)
 """
 
 import requests
@@ -172,6 +174,9 @@ class VoiceRecognitionHandler:
             return None
 
         if scale == "1-4":
+            # ============================================
+            # 🚫 ÉCHELLE 1-4 : PAS DE CHIFFRES (Q1-28)
+            # ============================================
             # ORDRE DE PRIORITÉ (du plus spécifique au plus général)
 
             # 1. Expressions multi-mots (PRIORITÉ MAXIMALE)
@@ -186,25 +191,25 @@ class VoiceRecognitionHandler:
                 return 2
 
             # ============================================
-            # 🆕 NOUVELLES VARIANTES POUR "ASSEZ" (score 3)
+            # 🔄 REMPLACEMENT "ASSEZ" → "PLUTÔT"
             # ============================================
             if self._contains_word(
                 text,
                 [
-                    "assez",
+                    "plutot",  # 🆕 Remplacement principal
                     "moyennement",
                     "moderement",
-                    "plutot",
-                    # 🆕 Nouvelles variantes ajoutées
-                    "ac",  # "AC"
-                    "asset",  # "asset"
-                    "ah c'est",  # "ah c'est" (avec apostrophe)
-                    "ah cest",  # "ah cest" (sans apostrophe)
-                    "ah ses",  # Variante phonétique supplémentaire
-                    "ah set",  # Variante phonétique supplémentaire
+                    # Anciennes variantes "assez" conservées pour compatibilité
+                    "assez",
+                    "ac",
+                    "asset",
+                    "ah c'est",
+                    "ah cest",
+                    "ah ses",
+                    "ah set",
                 ],
             ):
-                print("OK - Reconnu: 3 (assez)")
+                print("OK - Reconnu: 3 (plutôt)")
                 return 3
 
             # 2. "Beaucoup" et variantes (CRITIQUE - amélioration majeure)
@@ -231,55 +236,22 @@ class VoiceRecognitionHandler:
                 print("OK - Reconnu: 4 (beaucoup)")
                 return 4
 
-            # 3. Chiffres en français (AMÉLIORATION - plus de variantes)
-            chiffres_francais = {
-                # Chiffre 1
-                "un": 1,
-                "une": 1,
-                "ain": 1,
-                "eun": 1,
-                "hun": 1,
-                "in": 1,
-                # Chiffre 2
-                "deux": 2,
-                "deu": 2,
-                "de": 2,
-                "d": 2,
-                # Chiffre 3
-                "trois": 3,
-                "troi": 3,
-                "troy": 3,
-                "troa": 3,
-                # Chiffre 4
-                "quatre": 4,
-                "quatr": 4,
-                "quat": 4,
-                "katre": 4,
-                "cat": 4,
-            }
+            # ============================================
+            # 🚫 CHIFFRES DÉSACTIVÉS POUR ÉCHELLE 1-4
+            # ============================================
+            # Les chiffres arabes et français ne sont PLUS acceptés
+            # pour éviter la confusion sur les questions 1-28
 
-            words = text.split()
-            for word in words:
-                if word in chiffres_francais:
-                    score = chiffres_francais[word]
-                    if score <= 4:
-                        print(f"OK - Reconnu: {score} (chiffre francais '{word}')")
-                        return score
-
-            # 4. Chiffres arabes
-            if text in ["1", "2", "3", "4"]:
-                score = int(text)
-                print(f"OK - Reconnu: {score} (chiffre arabe)")
-                return score
-
-            # 5. Recherche de chiffres dans le texte
-            digit_match = re.search(r"\b([1-4])\b", text)
-            if digit_match:
-                score = int(digit_match.group(1))
-                print(f"OK - Reconnu: {score} (chiffre trouve dans le texte)")
-                return score
+            print(f"ERREUR - Aucune correspondance trouvee pour: '{text}'")
+            print(
+                f"DEBUG - Pour echelle 1-4, utilisez: 'pas du tout', 'un peu', 'plutot', 'beaucoup'"
+            )
+            return None
 
         elif scale == "1-7":
+            # ============================================
+            # ✅ ÉCHELLE 1-7 : CHIFFRES AUTORISÉS (Q29-30)
+            # ============================================
             # ORDRE DE PRIORITÉ pour échelle 1-7
 
             # 1. Expressions qualitatives
@@ -317,7 +289,7 @@ class VoiceRecognitionHandler:
                 print("OK - Reconnu: 7 (excellent)")
                 return 7
 
-            # 2. Chiffres en français (1-7)
+            # 2. Chiffres en français (1-7) - UNIQUEMENT POUR Q29-30
             chiffres_francais_1_7 = {
                 "un": 1,
                 "une": 1,
@@ -354,13 +326,13 @@ class VoiceRecognitionHandler:
                         print(f"OK - Reconnu: {score} (chiffre francais '{word}')")
                         return score
 
-            # 3. Chiffres arabes
+            # 3. Chiffres arabes - UNIQUEMENT POUR Q29-30
             if text in ["1", "2", "3", "4", "5", "6", "7"]:
                 score = int(text)
                 print(f"OK - Reconnu: {score} (chiffre arabe)")
                 return score
 
-            # 4. Recherche de chiffres dans le texte
+            # 4. Recherche de chiffres dans le texte - UNIQUEMENT POUR Q29-30
             digit_match = re.search(r"\b([1-7])\b", text)
             if digit_match:
                 score = int(digit_match.group(1))

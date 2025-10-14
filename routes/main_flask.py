@@ -1,6 +1,6 @@
 """
 Routes principales pour l'application Flask
-Pages : permission, accueil, questionnaire, résultat
+Pages : accueil (initiales), question 0 (tests), questionnaire, résultat
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for
@@ -10,15 +10,15 @@ main_bp = Blueprint("main", __name__)
 
 
 @main_bp.route("/")
-def permission():
-    """Page de permissions avec tests navigateur"""
-    return render_template("permission_flask.html")
-
-
-@main_bp.route("/accueil")
 def accueil():
-    """Page d'accueil avec informations personnelles"""
+    """Page d'accueil avec saisie des initiales et informations personnelles"""
     return render_template("accueil_flask.html")
+
+
+@main_bp.route("/question0")
+def question0():
+    """Question 0 : Tests audio et microphone"""
+    return render_template("question0_flask.html")
 
 
 @main_bp.route("/questionnaire")
@@ -27,7 +27,6 @@ def questionnaire():
     session_id = request.args.get("session_id")
     if not session_id:
         print("DEBUG: Session ID manquant dans l'URL")
-        # ✅ CORRECTION 2 : Redirection sans flash qui cause l'erreur
         return redirect(url_for("main.accueil"))
 
     # Valider que la session existe réellement en base
@@ -41,7 +40,6 @@ def questionnaire():
 
     if not session_data:
         print(f"DEBUG: Session {session_id} introuvable en base")
-        # ✅ Redirection directe sans message flash
         return redirect(url_for("main.accueil"))
 
     print(f"DEBUG: Session validée: {session_data.get('initials', 'N/A')}")
