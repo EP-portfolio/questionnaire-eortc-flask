@@ -360,24 +360,4 @@ document.addEventListener('DOMContentLoaded', function() {
     window.questionnaireManager = new QuestionnaireManager();
 });
 
-// Animation CSS pour les notifications
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    .notification-content {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-`;
-document.head.appendChild(style);
+// CSS pour les notifications déplacé dans style_flask.css
