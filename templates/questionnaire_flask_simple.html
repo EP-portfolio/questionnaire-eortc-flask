@@ -1,0 +1,183 @@
+{% extends "base_flask.html" %}
+
+{% block title %}Questionnaire - Question {{ current_question }}/30{% endblock %}
+
+{% block content %}
+<div class="questionnaire-page">
+    <!-- Header avec progression -->
+    <div class="question-header">
+        <div class="progress-section">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text">
+                <span id="current-question">1</span>/30 
+                (<span id="progress-percent">3</span>%)
+            </div>
+        </div>
+        
+        <div class="navigation-buttons">
+            <button class="nav-btn" id="prev-btn" onclick="previousQuestion()" disabled>
+                <i class="fas fa-arrow-left"></i>
+                Précédente
+            </button>
+            <button class="nav-btn" id="next-btn" onclick="nextQuestion()" disabled>
+                Suivante
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Question -->
+    <div class="question-container">
+        <div class="question-box" id="question-box">
+            <div class="question-number" id="question-number">Question 1</div>
+            <div class="question-text" id="question-text">
+                Chargement de la question...
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface vocale -->
+    <div class="voice-section" id="voice-section">
+        <h3 class="section-title">
+            <i class="fas fa-microphone"></i>
+            Réponse vocale
+        </h3>
+
+        <!-- Mode Web Speech API (Chrome/Edge) -->
+        <div class="web-speech-interface" id="web-speech-interface" style="display: none;">
+            <div class="speech-status" id="speech-status">
+                <div class="status-indicator" id="status-indicator">
+                    <i class="fas fa-microphone-slash"></i>
+                    Micro inactif
+                </div>
+                <div class="status-message" id="status-message">
+                    Cliquez sur le bouton pour commencer l'écoute continue
+                </div>
+            </div>
+
+            <div class="speech-controls">
+                <button class="voice-btn" id="start-listening-btn" onclick="startListening()">
+                    <i class="fas fa-microphone"></i>
+                    Démarrer l'écoute
+                </button>
+                <button class="voice-btn stop-btn" id="stop-listening-btn" onclick="stopListening()" style="display: none;">
+                    <i class="fas fa-stop"></i>
+                    Arrêter l'écoute
+                </button>
+            </div>
+
+            <div class="speech-feedback" id="speech-feedback" style="display: none;">
+                <div class="feedback-text" id="feedback-text"></div>
+                <div class="feedback-actions" id="feedback-actions"></div>
+            </div>
+        </div>
+
+        <!-- Mode fallback (autres navigateurs) -->
+        <div class="fallback-interface" id="fallback-interface" style="display: none;">
+            <div class="fallback-message">
+                <i class="fas fa-info-circle"></i>
+                Votre navigateur ne supporte pas la reconnaissance vocale continue.
+                Utilisez les boutons de réponse ci-dessous.
+            </div>
+        </div>
+    </div>
+
+    <!-- Réponses manuelles -->
+    <div class="responses-section" id="responses-section">
+        <h3 class="section-title">
+            <i class="fas fa-mouse-pointer"></i>
+            Réponse manuelle
+        </h3>
+        <div class="response-buttons" id="response-buttons">
+            <!-- Les boutons seront générés dynamiquement -->
+        </div>
+    </div>
+
+    <!-- Contrôles audio -->
+    <div class="audio-controls">
+        <button class="audio-btn" id="play-audio-btn" onclick="playQuestionAudio()">
+            <i class="fas fa-play"></i>
+            Lire la question
+        </button>
+        <button class="audio-btn" id="stop-audio-btn" onclick="stopAudio()" style="display: none;">
+            <i class="fas fa-stop"></i>
+            Arrêter l'audio
+        </button>
+    </div>
+
+    <!-- Message spécial pour Q29-30 -->
+    <div class="special-message" id="special-message" style="display: none;">
+        <div class="message-box">
+            <i class="fas fa-info-circle"></i>
+            <strong>Note :</strong> Pour les questions 29 et 30, utilisez l'échelle de 1 à 7.
+            Répondez par "un", "deux", "trois", "quatre", "cinq", "six", ou "sept".
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/speech_recognition_flask.js') }}"></script>
+<script>
+// Initialisation simplifiée - la classe QuestionnaireManager gère tout
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page questionnaire chargée');
+    
+    // Vérifier le mode navigateur
+    const browserType = localStorage.getItem('browser_type');
+    const isWebSpeechMode = browserType === 'chrome';
+    
+    // Afficher la bonne interface
+    if (isWebSpeechMode) {
+        document.getElementById('web-speech-interface').style.display = 'block';
+    } else {
+        document.getElementById('fallback-interface').style.display = 'block';
+    }
+    
+    // La classe QuestionnaireManager gère le chargement des questions
+    // Pas besoin d'appeler loadQuestion ici
+    
+    // Initialiser la reconnaissance vocale si disponible
+    if (isWebSpeechMode) {
+        initSpeechRecognition();
+    }
+});
+
+// Fonctions globales pour les boutons
+function previousQuestion() {
+    if (window.questionnaireManager) {
+        window.questionnaireManager.previousQuestion();
+    }
+}
+
+function nextQuestion() {
+    if (window.questionnaireManager) {
+        window.questionnaireManager.nextQuestion();
+    }
+}
+
+function startListening() {
+    if (window.speechManager) {
+        window.speechManager.startListening();
+    }
+}
+
+function stopListening() {
+    if (window.speechManager) {
+        window.speechManager.stopListening();
+    }
+}
+
+function playQuestionAudio() {
+    if (window.questionnaireManager) {
+        window.questionnaireManager.playQuestionAudio();
+    }
+}
+
+function stopAudio() {
+    if (window.questionnaireManager) {
+        window.questionnaireManager.stopAudio();
+    }
+}
+</script>
+{% endblock %}

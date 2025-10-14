@@ -153,20 +153,13 @@
 
 <script src="{{ url_for('static', filename='js/speech_recognition_flask.js') }}"></script>
 <script>
-// Variables globales
-let currentQuestion = 1;
-let sessionId = '{{ session_id }}';
-let questionData = null;
-let isWebSpeechMode = false;
-let speechRecognition = null;
-let isListening = false;
-let currentAudio = null;
-
-// Initialisation
+// Initialisation simplifiée - la classe QuestionnaireManager gère tout
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page questionnaire chargée');
+    
     // Vérifier le mode navigateur
     const browserType = localStorage.getItem('browser_type');
-    isWebSpeechMode = browserType === 'chrome';
+    const isWebSpeechMode = browserType === 'chrome';
     
     // Afficher la bonne interface
     if (isWebSpeechMode) {
@@ -175,8 +168,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('fallback-interface').style.display = 'block';
     }
     
-    // Charger la première question
-    loadQuestion(1);
+    // La classe QuestionnaireManager gère le chargement des questions
+    // Pas besoin d'appeler loadQuestion ici
     
     // Initialiser la reconnaissance vocale si disponible
     if (isWebSpeechMode) {

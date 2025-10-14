@@ -41,7 +41,7 @@ def questionnaire():
     
     print(f"DEBUG: Session validée: {session_data['initials']}")
     
-    return render_template('questionnaire_flask.html', session_id=session_id)
+    return render_template('questionnaire_flask_simple.html', session_id=session_id)
 
 @main_bp.route('/resultat/<session_id>')
 def resultat(session_id):
