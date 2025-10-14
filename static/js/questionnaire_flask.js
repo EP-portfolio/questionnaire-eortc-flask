@@ -13,7 +13,7 @@ class QuestionnaireManager {
         this.init();
     }
     
-    async init() {
+    init() {
         // Récupérer l'ID de session depuis l'URL
         this.sessionId = new URLSearchParams(window.location.search).get('session_id');
         
@@ -41,45 +41,7 @@ class QuestionnaireManager {
         this.loadQuestion(this.currentQuestion);
     }
     
-    async validateSession() {
-        try {
-            const response = await fetch(`/api/validate_session/${this.sessionId}`);
-            const data = await response.json();
-            
-            if (data.valid) {
-                console.log('Session validée:', data.session);
-                return true;
-            } else {
-                console.error('Session invalide:', data.error);
-                return false;
-            }
-        } catch (error) {
-            console.error('Erreur validation session:', error);
-            return false;
-        }
-    }
-    
-    async validateSessionWithRetry() {
-        // Essayer plusieurs fois avec des délais
-        const maxRetries = 3;
-        const retryDelay = 1000; // 1 seconde
-        
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            console.log(`Tentative de validation session ${attempt}/${maxRetries}`);
-            
-            const isValid = await this.validateSession();
-            if (isValid) {
-                return true;
-            }
-            
-            if (attempt < maxRetries) {
-                console.log(`Attente ${retryDelay}ms avant nouvelle tentative...`);
-                await new Promise(resolve => setTimeout(resolve, retryDelay));
-            }
-        }
-        
-        return false;
-    }
+    // Méthodes de validation supprimées - la session est validée côté serveur
     
     async loadQuestion(questionNum) {
         if (this.isLoading) return;
