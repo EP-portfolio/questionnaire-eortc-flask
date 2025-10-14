@@ -1,6 +1,8 @@
 # Guide de Déploiement Render - Questionnaire EORTC QLQ-C30
 
-## 🚀 Configuration Render Optimisée
+## 🚀 Configuration Render Optimisée - NOUVEAU PROJET RECOMMANDÉ
+
+> **⚠️ IMPORTANT** : Créez un **nouveau projet Render** pour éviter les conflits de configuration !
 
 ### 1. **Variables d'Environnement Requises**
 
@@ -15,8 +17,16 @@ USE_PRO_MODEL = False
 GOOGLE_CLOUD_API_KEY = (vide - pas nécessaire)
 ```
 
-### 2. **Configuration du Service**
+### 2. **Création du Nouveau Projet**
 
+#### **A. Créer le Projet**
+1. **Render Dashboard** → "New +" → "Web Service"
+2. **Connect** → Sélectionner votre repository GitHub
+3. **Repository** : `questionnaire-eortc-flask`
+4. **Name** : `questionnaire-eortc-flask-v2`
+5. **Root Directory** : `questionnaire_flask`
+
+#### **B. Configuration du Service**
 - **Type** : Web Service
 - **Environment** : Python
 - **Python Version** : 3.11.9
