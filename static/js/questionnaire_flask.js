@@ -1,6 +1,6 @@
 /**
  * Logique principale du questionnaire Flask
- * Gestion de l'interface utilisateur et communication avec le backend
+ * Version corrigée avec audio automatique et logs détaillés
  */
 
 class QuestionnaireManager {
@@ -14,7 +14,7 @@ class QuestionnaireManager {
     }
 
     init() {
-        // ✅ CORRECTION 5 : Vérifier qu'on est bien sur la page du questionnaire
+        // Vérifier qu'on est bien sur la page du questionnaire
         const isQuestionnairePage = window.location.pathname.includes('/questionnaire');
 
         if (!isQuestionnairePage) {
@@ -31,12 +31,10 @@ class QuestionnaireManager {
 
         if (!this.sessionId) {
             console.error('Session ID manquant');
-            // Rediriger silencieusement vers l'accueil
             window.location.href = '/accueil';
             return;
         }
 
-        // La session est déjà validée côté serveur, pas besoin de re-valider
         console.log('Session ID récupéré:', this.sessionId);
 
         // Récupérer le numéro de question depuis l'URL (optionnel)
@@ -78,10 +76,12 @@ class QuestionnaireManager {
                 // Afficher le message spécial pour Q29-30
                 this.toggleSpecialMessage(questionNum >= 29);
 
-                // Lecture automatique si audio activé
-                if (localStorage.getItem('audio_enabled') === 'true') {
-                    setTimeout(() => this.playQuestionAudio(), 1000);
-                }
+                // TOUJOURS lancer l'audio automatiquement
+                console.log('🔊 Lancement automatique de l\'audio dans 1 seconde...');
+                setTimeout(() => {
+                    console.log('🔊 Appel de playQuestionAudio()');
+                    this.playQuestionAudio();
+                }, 1000);
             } else {
                 throw new Error(result.error);
             }
@@ -97,13 +97,22 @@ class QuestionnaireManager {
     displayQuestion(question) {
         const questionNumber = document.getElementById('question-number');
         const questionText = document.getElementById('question-text');
+        const questionSpeech = document.getElementById('question-speech');
+        const questionSpeechText = document.getElementById('question-speech-text');
 
         if (questionNumber) {
             questionNumber.textContent = `Question ${this.currentQuestion}`;
         }
 
+        // Afficher le texte COURT de la question
         if (questionText) {
             questionText.textContent = question.text;
+        }
+
+        // Afficher le texte COMPLET (avec options) dans une zone séparée
+        if (questionSpeech && questionSpeechText && question.speech_text) {
+            questionSpeechText.textContent = question.speech_text;
+            questionSpeech.style.display = 'block';
         }
     }
 
@@ -187,12 +196,10 @@ class QuestionnaireManager {
                 this.showResponseConfirmation(result.response_text, 'Manuel');
 
                 if (result.is_complete) {
-                    // Questionnaire terminé
                     setTimeout(() => {
                         window.location.href = `/resultat/${this.sessionId}`;
                     }, 2000);
                 } else {
-                    // Question suivante
                     setTimeout(() => {
                         this.loadQuestion(result.next_question);
                     }, 2000);
@@ -217,7 +224,6 @@ class QuestionnaireManager {
             responseTextEl.textContent = `${type}: ${responseText}`;
             responseBox.style.display = 'block';
 
-            // Masquer après 3 secondes
             setTimeout(() => {
                 responseBox.style.display = 'none';
             }, 3000);
@@ -226,51 +232,80 @@ class QuestionnaireManager {
 
     async playQuestionAudio() {
         try {
-            console.log(`DEBUG: Lecture audio pour question ${this.currentQuestion}`);
+            console.log(`🔊 DEBUG: Tentative de lecture audio pour question ${this.currentQuestion}`);
+
+            const statusText = document.getElementById('audio-status-text');
+            if (statusText) {
+                statusText.textContent = '⏳ Chargement de l\'audio...';
+                statusText.style.color = '#fff';
+            }
 
             const response = await fetch(`/api/get_audio/${this.currentQuestion}`);
 
-            if (response.ok) {
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
+            console.log(`🔊 DEBUG: Réponse serveur - Status: ${response.status}`);
 
-                // Arrêter l'audio précédent
+            if (response.ok) {
+                console.log('🔊 DEBUG: Réponse OK, création du blob...');
+                const audioBlob = await response.blob();
+                console.log(`🔊 DEBUG: Blob créé - Taille: ${audioBlob.size} bytes`);
+
+                const audioUrl = URL.createObjectURL(audioBlob);
+                console.log(`🔊 DEBUG: URL créée: ${audioUrl}`);
+
                 this.stopAudio();
 
-                // Créer et jouer le nouvel audio
                 this.currentAudio = new Audio(audioUrl);
 
-                // Gérer les erreurs de lecture
                 this.currentAudio.onerror = (e) => {
-                    console.error('Erreur lecture audio:', e);
+                    console.error('❌ Erreur lecture audio:', e);
                     this.showError('Erreur : Impossible de lire l\'audio');
                     this.toggleAudioButtons(false);
+                    if (statusText) {
+                        statusText.textContent = '❌ Erreur de lecture audio';
+                    }
                 };
 
-                // Lancer la lecture
                 this.currentAudio.play().then(() => {
-                    console.log('Audio lancé avec succès');
-                    // Afficher le bouton stop
+                    console.log('✅ Audio lancé avec succès');
                     this.toggleAudioButtons(true);
+                    if (statusText) {
+                        statusText.textContent = '▶️ Lecture en cours...';
+                    }
                 }).catch(err => {
-                    console.error('Erreur play():', err);
+                    console.error('❌ Erreur play():', err);
                     this.showError('Erreur : Impossible de lire l\'audio');
                     this.toggleAudioButtons(false);
+                    if (statusText) {
+                        statusText.textContent = '❌ Erreur de lecture';
+                    }
                 });
 
                 this.currentAudio.onended = () => {
-                    console.log('Audio terminé');
+                    console.log('✅ Audio terminé');
                     this.toggleAudioButtons(false);
+                    if (statusText) {
+                        statusText.textContent = '✅ Lecture terminée - Vous pouvez répondre';
+                    }
                 };
 
             } else {
                 const errorData = await response.json();
-                console.error('Erreur serveur:', errorData);
+                console.error('❌ Erreur serveur:', errorData);
+
+                if (statusText) {
+                    statusText.textContent = `⚠️ ${errorData.error || 'Audio non disponible'}`;
+                }
+
                 throw new Error(errorData.error || 'Audio non disponible');
             }
         } catch (error) {
-            console.error('Erreur lecture audio:', error);
+            console.error('❌ Erreur lecture audio:', error);
             this.showError('Audio indisponible pour cette question');
+
+            const statusText = document.getElementById('audio-status-text');
+            if (statusText) {
+                statusText.textContent = '⚠️ Audio non disponible pour cette question';
+            }
         }
     }
 
@@ -293,7 +328,6 @@ class QuestionnaireManager {
     }
 
     showError(message) {
-        // Créer une notification d'erreur
         const notification = document.createElement('div');
         notification.className = 'error-notification';
         notification.innerHTML = `
@@ -303,7 +337,6 @@ class QuestionnaireManager {
             </div>
         `;
 
-        // Styles
         notification.style.cssText = `
             position: fixed;
             top: 20px;
@@ -319,14 +352,12 @@ class QuestionnaireManager {
 
         document.body.appendChild(notification);
 
-        // Supprimer après 5 secondes
         setTimeout(() => {
             notification.remove();
         }, 5000);
     }
 
     showSuccess(message) {
-        // Créer une notification de succès
         const notification = document.createElement('div');
         notification.className = 'success-notification';
         notification.innerHTML = `
@@ -336,7 +367,6 @@ class QuestionnaireManager {
             </div>
         `;
 
-        // Styles
         notification.style.cssText = `
             position: fixed;
             top: 20px;
@@ -352,7 +382,6 @@ class QuestionnaireManager {
 
         document.body.appendChild(notification);
 
-        // Supprimer après 3 secondes
         setTimeout(() => {
             notification.remove();
         }, 3000);
@@ -386,10 +415,8 @@ function stopAudio() {
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function () {
-    // Attendre un peu pour que speech_recognition_flask.js s'initialise d'abord
     setTimeout(() => {
-        // Initialiser le gestionnaire de questionnaire
         window.questionnaireManager = new QuestionnaireManager();
-        console.log('QuestionnaireManager initialisé');
+        console.log('✅ QuestionnaireManager initialisé');
     }, 100);
 });

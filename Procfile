@@ -1,1 +1,1 @@
-web: gunicorn app_flask:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --log-level info
+web: gunicorn app_flask:app --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120 --log-level info --max-requests 1000 --max-requests-jitter 100

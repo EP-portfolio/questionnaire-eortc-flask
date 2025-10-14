@@ -11,11 +11,11 @@
                 <div class="progress-fill" id="progress-fill"></div>
             </div>
             <div class="progress-text">
-                <span id="current-question">1</span>/30 
+                <span id="current-question">1</span>/30
                 (<span id="progress-percent">3</span>%)
             </div>
         </div>
-        
+
         <div class="navigation-buttons">
             <button class="nav-btn" id="prev-btn" onclick="previousQuestion()" disabled>
                 <i class="fas fa-arrow-left"></i>
@@ -32,8 +32,14 @@
     <div class="question-container">
         <div class="question-box" id="question-box">
             <div class="question-number" id="question-number">Question 1</div>
-            <div class="question-text" id="question-text">
+            <div class="question-text" id="question-text"
+                style="white-space: pre-wrap; line-height: 1.6; font-size: 1.1rem;">
                 Chargement de la question...
+            </div>
+            <div class="question-speech" id="question-speech"
+                style="margin-top: 1.5rem; padding: 1rem; background: #f0f7ff; border-left: 4px solid #2196F3; border-radius: 4px; display: none;">
+                <strong style="color: #1976D2;">📢 Texte complet (lu par l'audio) :</strong>
+                <div id="question-speech-text" style="margin-top: 0.5rem; white-space: pre-wrap; color: #424242;"></div>
             </div>
         </div>
     </div>
@@ -62,7 +68,8 @@
                     <i class="fas fa-microphone"></i>
                     Démarrer l'écoute
                 </button>
-                <button class="voice-btn stop-btn" id="stop-listening-btn" onclick="stopListening()" style="display: none;">
+                <button class="voice-btn stop-btn" id="stop-listening-btn" onclick="stopListening()"
+                    style="display: none;">
                     <i class="fas fa-stop"></i>
                     Arrêter l'écoute
                 </button>
@@ -95,16 +102,23 @@
         </div>
     </div>
 
-    <!-- Contrôles audio -->
-    <div class="audio-controls">
-        <button class="audio-btn" id="play-audio-btn" onclick="playQuestionAudio()">
-            <i class="fas fa-play"></i>
-            Lire la question
+    <!-- Contrôles audio TOUJOURS visibles et mis en évidence -->
+    <div class="audio-controls"
+        style="margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        <button class="audio-btn" id="play-audio-btn" onclick="playQuestionAudio()"
+            style="font-size: 1.3rem; padding: 1.2rem 2.5rem; background: white; color: #667eea; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s;">
+            <i class="fas fa-volume-up"></i>
+            🔊 Écouter la question
         </button>
-        <button class="audio-btn" id="stop-audio-btn" onclick="stopAudio()" style="display: none;">
+        <button class="audio-btn" id="stop-audio-btn" onclick="stopAudio()"
+            style="display: none; font-size: 1.3rem; padding: 1.2rem 2.5rem; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
             <i class="fas fa-stop"></i>
-            Arrêter l'audio
+            ⏹️ Arrêter l'audio
         </button>
+
+        <div id="audio-status" style="margin-top: 1rem; color: white; font-size: 1rem; font-weight: 500;">
+            <span id="audio-status-text">🎵 Cliquez pour écouter la question</span>
+        </div>
     </div>
 
     <!-- Message spécial pour Q29-30 -->
@@ -119,65 +133,75 @@
 
 <script src="{{ url_for('static', filename='js/speech_recognition_flask.js') }}"></script>
 <script>
-// Initialisation simplifiée - la classe QuestionnaireManager gère tout
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Page questionnaire chargée');
-    
-    // Vérifier le mode navigateur
-    const browserType = localStorage.getItem('browser_type');
-    const isWebSpeechMode = browserType === 'chrome';
-    
-    // Afficher la bonne interface
-    if (isWebSpeechMode) {
-        document.getElementById('web-speech-interface').style.display = 'block';
-    } else {
-        document.getElementById('fallback-interface').style.display = 'block';
-    }
-    
-    // La classe QuestionnaireManager gère le chargement des questions
-    // Pas besoin d'appeler loadQuestion ici
-    
-    // Initialiser la reconnaissance vocale si disponible
-    if (isWebSpeechMode) {
-        initSpeechRecognition();
-    }
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('✅ Page questionnaire chargée');
 
-// Fonctions globales pour les boutons
-function previousQuestion() {
-    if (window.questionnaireManager) {
-        window.questionnaireManager.previousQuestion();
-    }
-}
+        // FORCER l'activation de l'audio
+        localStorage.setItem('audio_enabled', 'true');
+        console.log('✅ Audio forcé à: true');
 
-function nextQuestion() {
-    if (window.questionnaireManager) {
-        window.questionnaireManager.nextQuestion();
-    }
-}
+        // Vérifier le mode navigateur
+        const browserType = localStorage.getItem('browser_type');
+        const isWebSpeechMode = browserType === 'chrome';
 
-function startListening() {
-    if (window.speechManager) {
-        window.speechManager.startContinuousSpeech();
-    }
-}
+        // Afficher la bonne interface
+        if (isWebSpeechMode) {
+            document.getElementById('web-speech-interface').style.display = 'block';
+        } else {
+            document.getElementById('fallback-interface').style.display = 'block';
+        }
 
-function stopListening() {
-    if (window.speechManager) {
-        window.speechManager.stopContinuousSpeech();
-    }
-}
+        // Initialiser la reconnaissance vocale si disponible
+        if (isWebSpeechMode) {
+            initSpeechRecognition();
+        }
+    });
 
-function playQuestionAudio() {
-    if (window.questionnaireManager) {
-        window.questionnaireManager.playQuestionAudio();
+    function previousQuestion() {
+        if (window.questionnaireManager) {
+            window.questionnaireManager.loadQuestion(window.questionnaireManager.currentQuestion - 1);
+        }
     }
-}
 
-function stopAudio() {
-    if (window.questionnaireManager) {
-        window.questionnaireManager.stopAudio();
+    function nextQuestion() {
+        if (window.questionnaireManager) {
+            window.questionnaireManager.loadQuestion(window.questionnaireManager.currentQuestion + 1);
+        }
     }
-}
+
+    function startListening() {
+        if (window.speechManager) {
+            window.speechManager.startContinuousSpeech();
+        }
+    }
+
+    function stopListening() {
+        if (window.speechManager) {
+            window.speechManager.stopContinuousSpeech();
+        }
+    }
+
+    function playQuestionAudio() {
+        if (window.questionnaireManager) {
+            window.questionnaireManager.playQuestionAudio();
+        }
+    }
+
+    function stopAudio() {
+        if (window.questionnaireManager) {
+            window.questionnaireManager.stopAudio();
+        }
+    }
 </script>
+
+<style>
+    .audio-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    .audio-btn:active {
+        transform: translateY(0);
+    }
+</style>
 {% endblock %}

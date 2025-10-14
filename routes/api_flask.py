@@ -1,6 +1,7 @@
 """
 Routes API pour l'application Flask
 Gestion AJAX : sessions, questions, reconnaissance vocale, audio
+Version corrigée avec système de hash MD5 pour les audios
 """
 
 from flask import Blueprint, request, jsonify, current_app, send_file
@@ -270,10 +271,11 @@ def save_manual_response():
 
 def _get_audio_cache_path(text: str) -> Path:
     """
-    ✅ CORRECTION 3 : Calculer le chemin du fichier audio avec la même logique que audio_handler
+    Calculer le chemin du fichier audio avec la même logique que audio_handler
+    Utilise le hash MD5 pour retrouver le fichier
     """
     # Utiliser la même logique que dans AudioHandlerSimple._get_cache_path()
-    voice_name = "Achernar"  # ou récupérer depuis la config
+    voice_name = "Achernar"
     cache_key = f"{voice_name}_{text}"
     text_hash = hashlib.md5(cache_key.encode("utf-8")).hexdigest()
 
@@ -308,7 +310,7 @@ def get_audio(question_num):
         print(f"DEBUG: Question {question_num}")
         print(f"DEBUG: Texte: {speech_text[:80]}...")
 
-        # ✅ Utiliser le hash MD5 pour trouver le fichier
+        # Utiliser le hash MD5 pour trouver le fichier
         audio_path = _get_audio_cache_path(speech_text)
 
         if audio_path and audio_path.exists():
@@ -471,15 +473,64 @@ def diagnostic():
         "routes": Path("routes").exists(),
     }
 
-    # Fichiers audio
+    # Fichiers audio détaillés
     audio_cache = Path("static/audio_cache")
     audio_files = []
+    total_audio_size = 0
+
     if audio_cache.exists():
         for subdir in audio_cache.glob("*"):
             if subdir.is_dir():
-                wav_count = len(list(subdir.glob("*.wav")))
-                if wav_count > 0:
-                    audio_files.append({"folder": subdir.name, "count": wav_count})
+                wav_files = list(subdir.glob("*.wav"))
+                if len(wav_files) > 0:
+                    folder_size = sum(f.stat().st_size for f in wav_files)
+                    total_audio_size += folder_size
+                    audio_files.append(
+                        {
+                            "folder": subdir.name,
+                            "count": len(wav_files),
+                            "size_mb": folder_size / (1024 * 1024),
+                            "files": [
+                                f.name for f in wav_files[:5]
+                            ],  # Premiers 5 fichiers
+                        }
+                    )
+
+    # Test de correspondance question → audio
+    from questionnaire_logic import EORTCQuestionnaire
+    import hashlib
+
+    questionnaire = EORTCQuestionnaire()
+    audio_mapping = []
+
+    for q_num in range(1, min(6, 31)):  # Tester les 5 premières questions
+        speech_text = questionnaire.get_speech_text(q_num)
+        voice_name = "Achernar"
+        cache_key = f"{voice_name}_{speech_text}"
+        expected_hash = hashlib.md5(cache_key.encode("utf-8")).hexdigest()
+
+        # Chercher le fichier
+        found = False
+        if audio_cache.exists():
+            for subdir in audio_cache.glob("*"):
+                if subdir.is_dir():
+                    audio_file = subdir / f"{expected_hash}.wav"
+                    if audio_file.exists():
+                        found = True
+                        audio_mapping.append(
+                            {
+                                "question": q_num,
+                                "hash": expected_hash,
+                                "found": True,
+                                "size": audio_file.stat().st_size,
+                            }
+                        )
+                        break
+
+        if not found:
+            audio_mapping.append(
+                {"question": q_num, "hash": expected_hash, "found": False}
+            )
 
     # Base de données
     db_path = Path("data/responses.db")
@@ -504,7 +555,12 @@ def diagnostic():
         {
             "environment": env_vars,
             "folders": folders,
-            "audio_cache": audio_files,
+            "audio_cache": {
+                "folders": audio_files,
+                "total_files": sum(f["count"] for f in audio_files),
+                "total_size_mb": total_audio_size / (1024 * 1024),
+            },
+            "audio_mapping_test": audio_mapping,
             "database": db_status,
             "timestamp": datetime.datetime.now().isoformat(),
         }
