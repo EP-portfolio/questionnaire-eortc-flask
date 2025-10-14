@@ -292,6 +292,8 @@ class VoiceRecognitionHandler:
 
         text = text.lower().strip()
         print(f"🔍 DEBUG - Texte reconnu: '{text}' (échelle: {scale})")
+        print(f"🔍 DEBUG - Longueur du texte: {len(text)} caractères")
+        print(f"🔍 DEBUG - Mots détectés: {text.split()}")
 
         # Rejeter explicitement les mots non-valides
         invalid_words = [
@@ -302,25 +304,33 @@ class VoiceRecognitionHandler:
             return None
 
         if scale == "1-4":
-            if any(word in text for word in ["pas du tout", "pas", "jamais", "aucun"]):
+            # Vérifier d'abord les expressions complètes (plus spécifiques)
+            if any(phrase in text for phrase in ["pas du tout", "jamais", "aucun"]):
                 print("✅ Reconnu comme: 1 (pas du tout)")
                 return 1
-            elif any(word in text for word in ["peu", "un petit peu", "légèrement"]):
-                print("✅ Reconnu comme: 2 (un peu)")
-                return 2
-            elif any(word in text for word in [
-                "assez", "moyennement", "modérément", "aise", "aisez", "aisee", 
-                "aisees", "ase", "asez", "asé", "asée", "acer", "acez", 
-                "asser", "assey", "passer"
-            ]):
-                print("✅ Reconnu comme: 3 (assez)")
-                return 3
-            elif any(word in text for word in [
-                "beaucoup", "très", "tout à fait", "complètement", "énormément",
-                "boucoup", "bocou", "boku", "bocoup", "beaukou", "beaucou", "bokoup"
-            ]):
+            elif any(phrase in text for phrase in ["beaucoup", "très", "tout à fait", "complètement", "énormément"]):
                 print("✅ Reconnu comme: 4 (beaucoup)")
                 return 4
+            elif any(phrase in text for phrase in ["assez", "moyennement", "modérément"]):
+                print("✅ Reconnu comme: 3 (assez)")
+                return 3
+            elif any(phrase in text for phrase in ["un peu", "légèrement"]):
+                print("✅ Reconnu comme: 2 (un peu)")
+                return 2
+            
+            # Vérifier ensuite les mots individuels (moins spécifiques)
+            elif any(word in text for word in ["beaucoup", "boucoup", "bocou", "boku", "bocoup", "beaukou", "beaucou", "bokoup", "bocou", "boku", "bocoup", "beaukou", "beaucou", "bokoup"]):
+                print("✅ Reconnu comme: 4 (beaucoup)")
+                return 4
+            elif any(word in text for word in ["assez", "aise", "aisez", "aisee", "aisees", "ase", "asez", "asé", "asée", "acer", "acez", "asser", "assey"]):
+                print("✅ Reconnu comme: 3 (assez)")
+                return 3
+            elif any(word in text for word in ["peu"]):
+                print("✅ Reconnu comme: 2 (un peu)")
+                return 2
+            elif any(word in text for word in ["pas"]):
+                print("✅ Reconnu comme: 1 (pas du tout)")
+                return 1
 
         elif scale == "1-7":
             if any(word in text for word in ["très mauvais", "horrible", "terrible"]):
