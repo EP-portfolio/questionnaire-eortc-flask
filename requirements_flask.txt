@@ -1,22 +1,13 @@
-# Framework Flask
+# Dépendances Flask essentielles
 Flask==3.0.0
-Flask-CORS==4.0.0
+flask-cors==4.0.0
+gunicorn==21.2.0
 
-# Traitement des données
-pandas>=2.2.0
-numpy>=1.24.0
+# Base de données
+# SQLite est intégré à Python, pas besoin de dépendance
 
-# Audio (sans pygame ni speech_recognition)
+# Requêtes HTTP
 requests==2.31.0
-google-cloud-texttospeech==2.16.0
 
-# Export de données
-openpyxl==3.1.2
-
-# Configuration
+# Optionnel : pour les variables d'environnement
 python-dotenv==1.0.0
-Werkzeug==3.0.1
-
-# Build tools
-setuptools>=65.0.0
-wheel>=0.38.0

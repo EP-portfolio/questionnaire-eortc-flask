@@ -78,10 +78,12 @@ def create_app():
     return app
 
 
-def main():
-    """Point d'entrée principal"""
-    app = create_app()
+# ✅ Créer l'instance app pour Gunicorn (production)
+app = create_app()
 
+
+def main():
+    """Point d'entrée principal pour développement local"""
     # Configuration du port
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV") == "development"

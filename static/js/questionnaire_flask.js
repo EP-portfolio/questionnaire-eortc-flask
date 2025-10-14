@@ -14,6 +14,14 @@ class QuestionnaireManager {
     }
 
     init() {
+        // ✅ CORRECTION 5 : Vérifier qu'on est bien sur la page du questionnaire
+        const isQuestionnairePage = window.location.pathname.includes('/questionnaire');
+
+        if (!isQuestionnairePage) {
+            console.log('DEBUG: Pas sur la page questionnaire, n\'initialise pas le manager');
+            return;
+        }
+
         // Récupérer l'ID de session depuis l'URL
         this.sessionId = new URLSearchParams(window.location.search).get('session_id');
 
@@ -23,7 +31,6 @@ class QuestionnaireManager {
 
         if (!this.sessionId) {
             console.error('Session ID manquant');
-            // ✅ CORRECTION 4 : Ne plus afficher d'alert() qui crée le message d'erreur
             // Rediriger silencieusement vers l'accueil
             window.location.href = '/accueil';
             return;
