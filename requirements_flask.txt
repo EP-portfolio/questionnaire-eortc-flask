@@ -1,5 +1,5 @@
-# Dépendances optimisées pour Render - Version sans pygame
-# pygame nécessite des bibliothèques système non disponibles sur Render
+# Dépendances optimisées pour Render - Version sans speech_recognition
+# speech_recognition incompatible avec Python 3.13 (module aifc supprimé)
 
 # Framework Flask
 Flask==3.0.0
@@ -9,10 +9,10 @@ Flask-CORS==4.0.0
 pandas>=2.2.0
 numpy>=1.24.0
 
-# Audio et reconnaissance vocale (sans pygame)
+# Audio et reconnaissance vocale (sans speech_recognition)
 requests==2.31.0
 google-cloud-texttospeech==2.16.0
-SpeechRecognition==3.10.0
+# SpeechRecognition==3.10.0  # ← Supprimé car incompatible Python 3.13
 # pygame==2.5.2  # ← Supprimé car nécessite SDL2
 
 # Export de données
@@ -22,5 +22,5 @@ openpyxl==3.1.2
 python-dotenv==1.0.0
 Werkzeug==3.0.1
 
-# Utilitaires essentiels
-pathlib2==2.3.7
+# Utilitaires essentiels (sans pathlib2 yanked)
+# pathlib2==2.3.7  # ← Supprimé car version yanked
