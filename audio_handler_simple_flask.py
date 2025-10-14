@@ -235,14 +235,14 @@ class AudioHandlerSimple:
 
             if cache_path.exists() and cache_path.stat().st_size > 0:
                 cached += 1
-                status = "✓ Déjà en cache"
+                status = "OK Deja en cache"
             else:
                 audio_path = self._get_or_create_audio(text)
                 if audio_path:
                     generated += 1
-                    status = "✓ Généré"
+                    status = "OK Genere"
                 else:
-                    status = "✗ Erreur"
+                    status = "ERREUR"
 
             print(f"  [{idx}/{total}] {status}")
 
@@ -252,9 +252,9 @@ class AudioHandlerSimple:
             if generated > 0:
                 time.sleep(0.5)
 
-        print(f"\nOK Pré-génération terminée !")
-        print(f"   • {cached} déjà en cache")
-        print(f"   • {generated} nouvellement générés")
+        print(f"\nOK Pre-generation terminee !")
+        print(f"   • {cached} deja en cache")
+        print(f"   • {generated} nouvellement generes")
         print(f"   • Total : {cached + generated}/{total}")
 
     def get_cache_info(self) -> dict:

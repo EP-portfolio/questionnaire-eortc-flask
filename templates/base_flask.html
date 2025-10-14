@@ -6,7 +6,7 @@
     <title>{% block title %}Questionnaire EORTC QLQ-C30{% endblock %}</title>
     
     <!-- CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_flask.css') }}">
     
     <!-- Font Awesome pour les icônes -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -61,7 +61,7 @@
     </footer>
 
     <!-- JavaScript -->
-    <script src="{{ url_for('static', filename='js/questionnaire.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/questionnaire_flask.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
