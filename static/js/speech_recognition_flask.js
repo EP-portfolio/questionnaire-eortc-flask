@@ -505,27 +505,23 @@ document.addEventListener('DOMContentLoaded', function() {
     window.speechManager = speechManager;
     window.fallbackManager = fallbackManager;
     window.currentQuestion = 1;
-    window.loadQuestion = loadQuestion;
+    
+    // Fonction loadQuestion sera définie par questionnaire_flask.js
+    window.loadQuestion = function(num) {
+        if (window.questionnaireManager) {
+            window.questionnaireManager.loadQuestion(num);
+        }
+    };
+    
+    // Fonction initSpeechRecognition
+    window.initSpeechRecognition = function() {
+        console.log('initSpeechRecognition appelée');
+        if (speechManager) {
+            speechManager.init();
+        } else if (fallbackManager) {
+            fallbackManager.init();
+        }
+    };
 });
 
-// Animation CSS pour les notifications
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    .notification-content {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-`;
-document.head.appendChild(style);
+// CSS pour les notifications déplacé dans style_flask.css

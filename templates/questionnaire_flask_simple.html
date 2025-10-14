@@ -158,13 +158,13 @@ function nextQuestion() {
 
 function startListening() {
     if (window.speechManager) {
-        window.speechManager.startListening();
+        window.speechManager.startContinuousSpeech();
     }
 }
 
 function stopListening() {
     if (window.speechManager) {
-        window.speechManager.stopListening();
+        window.speechManager.stopContinuousSpeech();
     }
 }
 
