@@ -26,7 +26,7 @@ GOOGLE_CLOUD_API_KEY = (vide - pas nécessaire)
 2. **Connect** → Sélectionner votre repository GitHub
 3. **Repository** : `questionnaire-eortc-flask`
 4. **Name** : `questionnaire-eortc-flask-v2`
-5. **Root Directory** : `questionnaire_flask` (dossier dans votre repo)
+5. **Root Directory** : **LAISSER VIDE** (fichiers directement à la racine du repo)
 
 #### **B. Configuration du Service**
 - **Type** : Web Service
@@ -36,27 +36,27 @@ GOOGLE_CLOUD_API_KEY = (vide - pas nécessaire)
 - **Start Command** : `python app_flask.py`
 - **Health Check Path** : `/api/health`
 
-### 3. **Structure des Fichiers**
+### 3. **Structure des Fichiers (Racine du Repository)**
 
 ```
-questionnaire_flask/
-├── app_flask.py              # Application principale
-├── config_flask.py           # Configuration
-├── requirements_flask.txt    # Dépendances
-├── render.yaml              # Configuration Render
-├── runtime.txt              # Version Python
-├── Procfile                 # Commande de démarrage
+questionnaire-eortc-flask/           ← Racine du repo GitHub
+├── app_flask.py                     # Application principale
+├── config_flask.py                  # Configuration
+├── requirements_flask.txt           # Dépendances
+├── render.yaml                     # Configuration Render
+├── runtime.txt                     # Version Python
+├── Procfile                        # Commande de démarrage
 ├── models/
-│   └── database_flask.py    # Base de données
+│   └── database_flask.py           # Base de données
 ├── routes/
-│   ├── main_flask.py        # Routes principales
-│   └── api_flask.py         # Routes API
+│   ├── main_flask.py               # Routes principales
+│   └── api_flask.py                # Routes API
 ├── static/
 │   ├── css/
 │   ├── js/
-│   └── audio_cache/         # Audios préenregistrés
+│   └── audio_cache/                # Audios préenregistrés
 ├── templates/
-└── data/                    # Base de données SQLite
+└── data/                           # Base de données SQLite
 ```
 
 ### 4. **Fonctionnalités**
