@@ -11,6 +11,7 @@ class SpeechRecognitionManager {
         this.mediaRecorder = null;
         this.audioChunks = [];
         this.shouldRestart = false; // Flag pour redémarrage automatique
+        this.processingResponse = false; // Protection contre appels multiples
         
         this.init();
     }
@@ -46,11 +47,15 @@ class SpeechRecognitionManager {
             
             this.recognition.onresult = (event) => {
                 console.log('DEBUG: onresult déclenché', event);
-                const transcript = event.results[0][0].transcript;
-                const confidence = event.results[0][0].confidence;
                 
-                console.log('DEBUG: Résultat:', transcript, 'Confiance:', confidence);
-                this.handleSpeechResult(transcript, confidence);
+                // Vérifier si c'est un résultat final
+                if (event.results[event.results.length - 1].isFinal) {
+                    const transcript = event.results[event.results.length - 1][0].transcript;
+                    const confidence = event.results[event.results.length - 1][0].confidence;
+                    
+                    console.log('DEBUG: Résultat FINAL:', transcript, 'Confiance:', confidence);
+                    this.handleSpeechResult(transcript, confidence);
+                }
             };
             
             this.recognition.onerror = (event) => {
@@ -64,11 +69,13 @@ class SpeechRecognitionManager {
                 this.updateUI('stopped');
                 
                 // Redémarrer automatiquement l'écoute continue si elle était active
-                if (this.shouldRestart) {
+                if (this.shouldRestart && !this.isListening) {
                     console.log('Redémarrage automatique de l\'écoute...');
                     setTimeout(() => {
-                        this.startContinuousSpeech();
-                    }, 500);
+                        if (this.shouldRestart && !this.isListening) {
+                            this.startContinuousSpeech();
+                        }
+                    }, 1000);
                 }
             };
             
@@ -129,12 +136,7 @@ class SpeechRecognitionManager {
         switch (error) {
             case 'no-speech':
                 message = 'Aucune parole détectée. Veuillez réessayer.';
-                // Redémarrer automatiquement
-                setTimeout(() => {
-                    if (this.isListening) {
-                        this.recognition.start();
-                    }
-                }, 1000);
+                // Ne pas redémarrer automatiquement pour no-speech
                 break;
             case 'audio-capture':
                 message = 'Erreur : Microphone non disponible';
@@ -159,6 +161,15 @@ class SpeechRecognitionManager {
     
     async processVoiceResponse(transcript) {
         console.log('DEBUG: processVoiceResponse appelé avec:', transcript);
+        
+        // Protection contre les appels multiples
+        if (this.processingResponse) {
+            console.log('DEBUG: Déjà en cours de traitement, ignoré');
+            return;
+        }
+        
+        this.processingResponse = true;
+        
         try {
             // Vérifier que le transcript n'est pas vide
             if (!transcript || transcript.trim() === '') {
@@ -202,6 +213,8 @@ class SpeechRecognitionManager {
         } catch (error) {
             console.error('Erreur traitement vocal:', error);
             this.showError('Erreur : Impossible de traiter la réponse');
+        } finally {
+            this.processingResponse = false;
         }
     }
     
