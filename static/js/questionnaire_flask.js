@@ -17,6 +17,10 @@ class QuestionnaireManager {
         // Récupérer l'ID de session depuis l'URL
         this.sessionId = new URLSearchParams(window.location.search).get('session_id');
         
+        console.log('DEBUG: QuestionnaireManager.init() appelé');
+        console.log('DEBUG: URL complète:', window.location.href);
+        console.log('DEBUG: Session ID extrait:', this.sessionId);
+        
         if (!this.sessionId) {
             console.error('Session ID manquant');
             alert('Erreur : Session invalide');
@@ -356,8 +360,12 @@ function stopAudio() {
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialiser le gestionnaire de questionnaire
-    window.questionnaireManager = new QuestionnaireManager();
+    // Attendre un peu pour que speech_recognition_flask.js s'initialise d'abord
+    setTimeout(() => {
+        // Initialiser le gestionnaire de questionnaire
+        window.questionnaireManager = new QuestionnaireManager();
+        console.log('QuestionnaireManager initialisé');
+    }, 100);
 });
 
 // CSS pour les notifications déplacé dans style_flask.css

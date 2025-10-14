@@ -502,6 +502,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Exposer les variables globales
     window.sessionId = new URLSearchParams(window.location.search).get('session_id');
+    window.speechManager = speechManager;
+    window.fallbackManager = fallbackManager;
     window.currentQuestion = 1;
     window.loadQuestion = loadQuestion;
 });
