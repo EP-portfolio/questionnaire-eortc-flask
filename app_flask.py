@@ -42,6 +42,15 @@ def create_app():
     app.questionnaire = EORTCQuestionnaire()
     app.db = DatabaseManager()
     
+    # Forcer l'initialisation de la base de données
+    print("Initialisation de la base de donnees...")
+    try:
+        # Tester la connexion
+        test_session = app.db.get_session("test")
+        print("Base de donnees initialisee avec succes")
+    except Exception as e:
+        print(f"ERREUR initialisation base: {e}")
+    
     # Récupérer la clé API
     api_key = os.environ.get('GOOGLE_CLOUD_API_KEY')
     if api_key:
