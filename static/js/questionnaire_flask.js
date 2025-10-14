@@ -1,6 +1,6 @@
 /**
  * Logique principale du questionnaire Flask
- * Version corrigée avec audio automatique et logs détaillés
+ * Version corrigée avec audio automatique, logs détaillés et arrêt audio sur parole
  */
 
 class QuestionnaireManager {
@@ -9,12 +9,12 @@ class QuestionnaireManager {
         this.sessionId = null;
         this.questionData = null;
         this.isLoading = false;
+        this.currentAudio = null;
 
         this.init();
     }
 
     init() {
-        // Vérifier qu'on est bien sur la page du questionnaire
         const isQuestionnairePage = window.location.pathname.includes('/questionnaire');
 
         if (!isQuestionnairePage) {
@@ -22,7 +22,6 @@ class QuestionnaireManager {
             return;
         }
 
-        // Récupérer l'ID de session depuis l'URL
         this.sessionId = new URLSearchParams(window.location.search).get('session_id');
 
         console.log('DEBUG: QuestionnaireManager.init() appelé');
@@ -37,18 +36,15 @@ class QuestionnaireManager {
 
         console.log('Session ID récupéré:', this.sessionId);
 
-        // Récupérer le numéro de question depuis l'URL (optionnel)
         const questionParam = new URLSearchParams(window.location.search).get('question');
         if (questionParam) {
             this.currentQuestion = parseInt(questionParam);
         }
 
-        // Exposer les variables globales
         window.sessionId = this.sessionId;
         window.currentQuestion = this.currentQuestion;
         window.loadQuestion = (num) => this.loadQuestion(num);
 
-        // Charger la question actuelle
         this.loadQuestion(this.currentQuestion);
     }
 
@@ -60,11 +56,9 @@ class QuestionnaireManager {
             this.currentQuestion = questionNum;
             window.currentQuestion = questionNum;
 
-            // Mettre à jour l'interface
             this.updateProgress();
             this.updateNavigationButtons();
 
-            // Charger les données de la question
             const response = await fetch(`/api/get_question/${questionNum}`);
             const result = await response.json();
 
@@ -73,10 +67,8 @@ class QuestionnaireManager {
                 this.displayQuestion(this.questionData);
                 this.createResponseButtons(this.questionData);
 
-                // Afficher le message spécial pour Q29-30
                 this.toggleSpecialMessage(questionNum >= 29);
 
-                // TOUJOURS lancer l'audio automatiquement
                 console.log('🔊 Lancement automatique de l\'audio dans 1 seconde...');
                 setTimeout(() => {
                     console.log('🔊 Appel de playQuestionAudio()');
@@ -104,12 +96,10 @@ class QuestionnaireManager {
             questionNumber.textContent = `Question ${this.currentQuestion}`;
         }
 
-        // Afficher le texte COURT de la question
         if (questionText) {
             questionText.textContent = question.text;
         }
 
-        // Afficher le texte COMPLET (avec options) dans une zone séparée
         if (questionSpeech && questionSpeechText && question.speech_text) {
             questionSpeechText.textContent = question.speech_text;
             questionSpeech.style.display = 'block';
@@ -312,7 +302,9 @@ class QuestionnaireManager {
     stopAudio() {
         if (this.currentAudio) {
             this.currentAudio.pause();
+            this.currentAudio.currentTime = 0;
             this.currentAudio = null;
+            console.log('🔇 Audio arrêté');
         }
         this.toggleAudioButtons(false);
     }
@@ -412,6 +404,17 @@ function stopAudio() {
         window.questionnaireManager.stopAudio();
     }
 }
+
+// ✅ Fonction pour arrêter l'audio quand l'utilisateur commence à parler
+function stopAudioOnSpeech() {
+    if (window.questionnaireManager && window.questionnaireManager.currentAudio) {
+        console.log('🔇 L\'utilisateur parle - Arrêt de l\'audio de la question');
+        window.questionnaireManager.stopAudio();
+    }
+}
+
+// Exposer la fonction globalement pour speech_recognition_flask.js
+window.stopAudioOnSpeech = stopAudioOnSpeech;
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function () {
