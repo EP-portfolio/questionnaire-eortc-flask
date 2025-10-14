@@ -9,13 +9,15 @@
 Dans le dashboard Render, configurez ces variables :
 
 ```
-SECRET_KEY = questionnaire-eortc-2025-secret-key-production-very-secure
+SECRET_KEY = 0RE4oaorR674&%23wQqq0E!pPP8QO6N8KaNXeIK7xb3VLiiPMS9JaRZY502yAAaw
 FLASK_DEBUG = False
 AUDIO_ENABLED = True
 USE_GEMINI_TTS = False
 USE_PRO_MODEL = False
 GOOGLE_CLOUD_API_KEY = (vide - pas nécessaire)
 ```
+
+> **⚠️ SÉCURITÉ** : Utilisez la clé générée ci-dessus ou générez votre propre clé avec `python generate_secret_key.py`
 
 ### 2. **Création du Nouveau Projet**
 
@@ -24,7 +26,7 @@ GOOGLE_CLOUD_API_KEY = (vide - pas nécessaire)
 2. **Connect** → Sélectionner votre repository GitHub
 3. **Repository** : `questionnaire-eortc-flask`
 4. **Name** : `questionnaire-eortc-flask-v2`
-5. **Root Directory** : `questionnaire_flask`
+5. **Root Directory** : `questionnaire_flask` (dossier dans votre repo)
 
 #### **B. Configuration du Service**
 - **Type** : Web Service
