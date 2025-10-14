@@ -1,6 +1,6 @@
 """
 Routes principales pour l'application Flask
-Pages : accueil (initiales), question 0 (tests), questionnaire, résultat
+Pages : accueil (initiales), questionnaire (Q0-Q30), résultat
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for
@@ -15,15 +15,9 @@ def accueil():
     return render_template("accueil_flask.html")
 
 
-@main_bp.route("/question0")
-def question0():
-    """Question 0 : Tests audio et microphone"""
-    return render_template("question0_flask.html")
-
-
 @main_bp.route("/questionnaire")
 def questionnaire():
-    """Page du questionnaire avec reconnaissance vocale continue"""
+    """Page du questionnaire avec reconnaissance vocale continue (Q0 puis Q1-Q30)"""
     session_id = request.args.get("session_id")
     if not session_id:
         print("DEBUG: Session ID manquant dans l'URL")

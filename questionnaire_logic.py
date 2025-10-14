@@ -1,5 +1,5 @@
 """
-Logique métier du questionnaire EORTC QLQ-C30
+Logique métier du questionnaire EORTC QLQ-C30 avec Question 0
 """
 
 import datetime
@@ -14,8 +14,15 @@ class EORTCQuestionnaire:
         self.questions = self._setup_questions()
 
     def _setup_questions(self) -> Dict:
-        """Définit toutes les questions du questionnaire EORTC QLQ-C30"""
+        """Définit toutes les questions du questionnaire incluant la Question 0"""
         return {
+            # Question 0 : Tests audio et microphone
+            0: {
+                "text": "Question 0 - Tests préalables",
+                "scale": "test",
+                "options": ["Test audio réussi", "Microphone validé"],
+                "is_test_question": True,
+            },
             # Questions 1-5 : Capacités physiques générales
             1: {
                 "text": "Avez-vous des difficultés à faire certains efforts physiques pénibles comme porter un sac à provisions chargé ou une valise?",
@@ -195,15 +202,24 @@ class EORTCQuestionnaire:
 
     def should_read_options(self, question_num: int) -> bool:
         """Détermine si on doit lire les options pour cette question"""
-        # Lire les options pour Q1 (première fois échelle 1-4)
+        # Lire les options pour Q0 (test), Q1 (première fois échelle 1-4)
         # et Q29 (changement d'échelle vers 1-7)
-        return question_num in [1, 29]
+        return question_num in [0, 1, 29]
 
     def get_speech_text(self, question_num: int) -> str:
         """Génère le texte à lire vocalement pour une question"""
         question = self.get_question(question_num)
         if not question:
             return ""
+
+        # Question 0 spéciale
+        if question_num == 0:
+            return """Question zéro. Tests audio et microphone.
+            Cliquez sur le bouton pour tester l'audio. Si vous entendez ce message, l'audio fonctionne correctement.
+            Ensuite, cochez la case pour confirmer que vous avez entendu le test.
+            Puis, testez votre microphone en cliquant sur le bouton de test microphone.
+            Parlez clairement et attendez deux secondes. Une fois les deux tests validés, vous pourrez continuer.
+            L'écoute continue sera alors activée pour les questions suivantes."""
 
         speech_text = f"Question {question_num}. {question['text']}"
 
@@ -221,7 +237,9 @@ class EORTCQuestionnaire:
         if not question:
             return False
 
-        if question["scale"] == "1-4":
+        if question["scale"] == "test":
+            return True  # Question 0 toujours valide
+        elif question["scale"] == "1-4":
             return 1 <= score <= 4
         elif question["scale"] == "1-7":
             return 1 <= score <= 7

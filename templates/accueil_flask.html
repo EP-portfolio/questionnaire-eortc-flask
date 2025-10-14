@@ -93,8 +93,12 @@
 </div>
 
 <script>
+    console.log('🚀 Page accueil chargée');
+
     // Initialisation
     document.addEventListener('DOMContentLoaded', function () {
+        console.log('✅ DOM chargé');
+
         // Définir la date d'aujourd'hui par défaut
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('today_date').value = today;
@@ -104,6 +108,7 @@
 
         // Forcer le mode Chrome (toujours mode continu)
         localStorage.setItem('browser_type', 'chrome');
+        console.log('✅ Mode Chrome activé');
 
         // Gérer le formulaire
         setupFormHandlers();
@@ -113,6 +118,8 @@
         const form = document.getElementById('personal-form');
         const submitBtn = document.getElementById('submit-btn');
         const consentCheckbox = document.getElementById('consent');
+
+        console.log('✅ Handlers configurés');
 
         // Gérer la validation du formulaire
         function validateForm() {
@@ -137,39 +144,56 @@
         // Gérer la soumission
         form.addEventListener('submit', function (e) {
             e.preventDefault();
-
             console.log('📝 Formulaire soumis');
 
-            // Stocker les données temporairement
+            // Récupérer les données
             const formData = new FormData(form);
             const data = {
                 initials: formData.get('initials'),
                 birth_date: formData.get('birth_date'),
-                today_date: formData.get('today_date')
+                today_date: formData.get('today_date'),
+                audio_enabled: true,
+                mode: 'Continu (Web Speech)'
             };
 
-            console.log('💾 Données à stocker:', data);
+            console.log('💾 Données:', data);
 
-            // Stocker dans localStorage pour la question 0
-            localStorage.setItem('pending_session_data', JSON.stringify(data));
-            console.log('✅ Données stockées dans localStorage');
+            // Afficher le loading
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création de la session...';
+            submitBtn.disabled = true;
 
-            // Vérifier le stockage
-            const stored = localStorage.getItem('pending_session_data');
-            console.log('🔍 Vérification:', stored);
+            // Créer la session directement
+            fetch('/api/start_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        // Stocker l'ID de session
+                        localStorage.setItem('session_id', result.session_id);
 
-            // Rediriger vers la question 0
-            console.log('🔄 Redirection vers /question0...');
-            window.location.href = '/question0';
+                        console.log('✅ Session créée:', result.session_id);
+
+                        // Rediriger vers le questionnaire (qui commencera par Q0)
+                        window.location.href = `/questionnaire?session_id=${result.session_id}`;
+                    } else {
+                        throw new Error(result.error || 'Erreur création session');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur : ' + error.message);
+
+                    // Restaurer le bouton
+                    submitBtn.innerHTML = '<i class="fas fa-arrow-right"></i> CONTINUER';
+                    submitBtn.disabled = false;
+                });
         });
     }
-
-    // Test de redirection manuelle (pour debug)
-    window.testRedirect = function () {
-        console.log('Test de redirection manuelle');
-        window.location.href = '/question0';
-    };
-    console.log('💡 Pour tester manuellement, tapez: testRedirect()');
 
     function showHelp(type) {
         let message = '';
@@ -198,5 +222,7 @@
             alert(message);
         }
     }
+
+    console.log('💡 Page accueil prête');
 </script>
 {% endblock %}

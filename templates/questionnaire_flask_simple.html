@@ -11,8 +11,8 @@
                 <div class="progress-fill" id="progress-fill"></div>
             </div>
             <div class="progress-text">
-                <span id="current-question">1</span>/30
-                (<span id="progress-percent">3</span>%)
+                <span id="current-question">0</span>/30
+                (<span id="progress-percent">0</span>%)
             </div>
         </div>
 
@@ -28,88 +28,382 @@
         </div>
     </div>
 
-    <!-- Question (simplifié) -->
-    <div class="question-container">
-        <div class="question-box" id="question-box">
-            <div class="question-number" id="question-number">Question 1</div>
-            <div class="question-text" id="question-text"
-                style="font-size: 1.3rem; font-weight: 500; color: #333; line-height: 1.4;">
-                Chargement de la question...
+    <!-- Question 0 : Tests audio et micro -->
+    <div class="question0-container" id="question0-container" style="display: none;">
+        <div class="question-box">
+            <div class="question-number">Question 0</div>
+
+            <!-- Encart texte complet pour Q0 -->
+            <div class="question-speech"
+                style="margin-top: 1.5rem; padding: 1rem; background: #f0f7ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+                <strong style="color: #1976D2;">🔢 Texte complet (lu par l'audio) :</strong>
+                <div id="question0-speech-text" style="margin-top: 0.5rem; white-space: pre-wrap; color: #424242;">
+                    Question zéro. Tests audio et microphone.
+                    Cliquez sur le bouton pour tester l'audio. Si vous entendez ce message, l'audio fonctionne
+                    correctement.
+                    Ensuite, cochez la case pour confirmer que vous avez entendu le test.
+                    Puis, testez votre microphone en cliquant sur le bouton de test microphone.
+                    Parlez clairement et attendez deux secondes. Une fois les deux tests validés, vous pourrez
+                    continuer.
+                    L'écoute continue sera alors activée pour les questions suivantes.
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Contrôles audio (mis en évidence) -->
-    <div class="audio-controls"
-        style="margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-        <button class="audio-btn" id="play-audio-btn" onclick="playQuestionAudio()"
-            style="font-size: 1.3rem; padding: 1.2rem 2.5rem; background: white; color: #667eea; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s;">
-            <i class="fas fa-volume-up"></i>
-            🔊 Écouter la question
-        </button>
-        <button class="audio-btn" id="stop-audio-btn" onclick="stopAudio()"
-            style="display: none; font-size: 1.3rem; padding: 1.2rem 2.5rem; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
-            <i class="fas fa-stop"></i>
-            ⏹️ Arrêter l'audio
-        </button>
+        <!-- Tests -->
+        <div class="test-buttons" style="margin-top: 2rem;">
+            <div class="test-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="test-box">
+                    <h4 class="test-title">
+                        <i class="fas fa-volume-up"></i>
+                        Audio
+                    </h4>
+                    <button class="test-btn" id="test-audio-btn" onclick="testAudio()">
+                        <i class="fas fa-play"></i>
+                        Tester l'audio
+                    </button>
+                </div>
 
-        <div id="audio-status" style="margin-top: 1rem; color: white; font-size: 1rem; font-weight: 500;">
-            <span id="audio-status-text">🎵 Cliquez pour écouter la question</span>
+                <div class="test-box">
+                    <h4 class="test-title">
+                        <i class="fas fa-microphone"></i>
+                        Microphone
+                    </h4>
+                    <button class="test-btn" id="test-micro-btn" onclick="testMicrophone()">
+                        <i class="fas fa-microphone"></i>
+                        Tester le micro
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Case à cocher -->
+        <div class="audio-confirmation" id="audio-confirmation"
+            style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border: 2px solid #4CAF50;">
+            <label class="checkbox-label-large"
+                style="display: flex; align-items: center; cursor: pointer; font-size: 1.2rem;">
+                <input type="checkbox" id="audio-confirmed" style="width: 24px; height: 24px; margin-right: 1rem;">
+                <span>Cochez si vous avez entendu le test audio</span>
+            </label>
+        </div>
+
+        <!-- Interface test micro -->
+        <div class="microphone-test" id="microphone-test"
+            style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div class="test-info">
+                <h4>Test : Cliquez, parlez, puis attendez 2 secondes</h4>
+            </div>
+            <div class="recorder-container" style="text-align: center; margin: 1rem 0;">
+                <button class="recorder-btn" id="recorder-btn" onclick="startRecording()"
+                    style="font-size: 1.2rem; padding: 1rem 2rem;">
+                    <i class="fas fa-microphone"></i>
+                    <span>🎤 Tester</span>
+                </button>
+            </div>
+            <div class="recording-feedback" id="recording-feedback"
+                style="display: none; padding: 1rem; background: #fff3cd; border-radius: 8px; margin-top: 1rem;">
+                <p class="feedback-text" style="margin: 0; font-size: 1.1rem; font-weight: 500;"></p>
+            </div>
+        </div>
+
+        <!-- Résultats -->
+        <div class="test-results" id="test-results" style="display: none; margin-top: 1.5rem;">
+            <div class="result-item" id="audio-result"
+                style="display: none; padding: 1rem; background: #d4edda; color: #155724; border-radius: 8px; margin-bottom: 0.5rem;">
+                <i class="fas fa-check-circle"></i>
+                <span>Audio fonctionne !</span>
+            </div>
+            <div class="result-item" id="micro-result"
+                style="display: none; padding: 1rem; background: #d4edda; color: #155724; border-radius: 8px;">
+                <i class="fas fa-check-circle"></i>
+                <span>Microphone fonctionne !</span>
+            </div>
+        </div>
+
+        <!-- Bouton pour passer à Q1 -->
+        <div class="continue-section" style="margin-top: 2rem; text-align: center;">
+            <button class="continue-btn" id="q0-continue-btn" onclick="startRealQuestionnaire()" disabled
+                style="font-size: 1.2rem; padding: 1rem 2rem; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                <i class="fas fa-arrow-right"></i>
+                Continuer vers Question 1
+            </button>
         </div>
     </div>
 
-    <!-- Réponses manuelles -->
-    <div class="responses-section" id="responses-section" style="margin-top: 2rem;">
-        <h3 class="section-title">
-            <i class="fas fa-mouse-pointer"></i>
-            Réponse manuelle
-        </h3>
-        <div class="response-buttons" id="response-buttons">
-            <!-- Les boutons seront générés dynamiquement -->
+    <!-- Questions 1-30 -->
+    <div class="questions-container" id="questions-container" style="display: none;">
+        <!-- Encart texte complet (TOUJOURS VISIBLE) -->
+        <div class="question-box" id="question-box">
+            <div class="question-number" id="question-number">Question 1</div>
+            <div class="question-speech"
+                style="margin-top: 1.5rem; padding: 1rem; background: #f0f7ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+                <strong style="color: #1976D2;">🔢 Texte complet (lu par l'audio) :</strong>
+                <div id="question-speech-text"
+                    style="margin-top: 0.5rem; white-space: pre-wrap; color: #424242; line-height: 1.6;">
+                    Chargement de la question...
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- Message spécial pour Q29-30 -->
-    <div class="special-message" id="special-message" style="display: none;">
-        <div class="message-box">
-            <i class="fas fa-info-circle"></i>
-            <strong>Note :</strong> Pour les questions 29 et 30, utilisez l'échelle de 1 à 7.
-            Répondez par "un", "deux", "trois", "quatre", "cinq", "six", ou "sept".
+        <!-- Contrôles audio -->
+        <div class="audio-controls"
+            style="margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <button class="audio-btn" id="play-audio-btn" onclick="playQuestionAudio()"
+                style="font-size: 1.3rem; padding: 1.2rem 2.5rem; background: white; color: #667eea; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.3s;">
+                <i class="fas fa-volume-up"></i>
+                🔊 Écouter la question
+            </button>
+            <button class="audio-btn" id="stop-audio-btn" onclick="stopAudio()"
+                style="display: none; font-size: 1.3rem; padding: 1.2rem 2.5rem; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                <i class="fas fa-stop"></i>
+                ⏹️ Arrêter l'audio
+            </button>
+
+            <div id="audio-status" style="margin-top: 1rem; color: white; font-size: 1rem; font-weight: 500;">
+                <span id="audio-status-text">🎵 Cliquez pour écouter la question</span>
+            </div>
+        </div>
+
+        <!-- Réponses manuelles -->
+        <div class="responses-section" id="responses-section" style="margin-top: 2rem;">
+            <h3 class="section-title">
+                <i class="fas fa-mouse-pointer"></i>
+                Réponse manuelle
+            </h3>
+            <div class="response-buttons" id="response-buttons">
+                <!-- Les boutons seront générés dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Message spécial pour Q29-30 -->
+        <div class="special-message" id="special-message" style="display: none;">
+            <div class="message-box">
+                <i class="fas fa-info-circle"></i>
+                <strong>Note :</strong> Pour les questions 29 et 30, utilisez l'échelle de 1 à 7.
+            </div>
         </div>
     </div>
 
     <!-- Statut écoute continue (discret) -->
     <div class="listening-status" id="listening-status"
-        style="position: fixed; bottom: 20px; right: 20px; padding: 1rem 1.5rem; background: rgba(0,0,0,0.8); color: white; border-radius: 8px; display: none; z-index: 1000;">
+        style="position: fixed; bottom: 20px; right: 20px; padding: 1rem 1.5rem; background: rgba(76, 175, 80, 0.9); color: white; border-radius: 8px; display: none; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
         <i class="fas fa-microphone"></i>
-        <span id="listening-text">Écoute active</span>
+        <span id="listening-text">🎤 Écoute active</span>
     </div>
 </div>
 
 <script src="{{ url_for('static', filename='js/speech_recognition_flask.js') }}"></script>
 <script>
+    let audioConfirmed = false;
+    let microTested = false;
+    let isRecording = false;
+    let recognition = null;
+    let currentQuestionNum = 0;
+
     document.addEventListener('DOMContentLoaded', function () {
         console.log('✅ Page questionnaire chargée');
 
         // Forcer l'activation de l'audio
         localStorage.setItem('audio_enabled', 'true');
-        console.log('✅ Audio forcé à : true');
-
-        // Vérifier le mode navigateur (toujours Chrome maintenant)
         localStorage.setItem('browser_type', 'chrome');
 
-        // Initialiser la reconnaissance vocale
-        initSpeechRecognition();
+        // Commencer par la Question 0
+        showQuestion0();
 
-        // Démarrer automatiquement l'écoute continue
+        // Initialiser la reconnaissance vocale (mais ne pas démarrer encore)
+        if (window.initSpeechRecognition) {
+            initSpeechRecognition();
+        }
+
+        // Écouter la case à cocher
+        const audioCheckbox = document.getElementById('audio-confirmed');
+        if (audioCheckbox) {
+            audioCheckbox.addEventListener('change', function () {
+                audioConfirmed = this.checked;
+                checkQ0ContinueButton();
+            });
+        }
+    });
+
+    function showQuestion0() {
+        console.log('📋 Affichage Question 0');
+        document.getElementById('question0-container').style.display = 'block';
+        document.getElementById('questions-container').style.display = 'none';
+        currentQuestionNum = 0;
+        updateProgress();
+    }
+
+    function testAudio() {
+        console.log('🔊 Test audio');
+        const btn = document.getElementById('test-audio-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lecture...';
+
+        const audio = new Audio('/api/get_audio/0');
+
+        audio.addEventListener('ended', () => {
+            console.log('Audio terminé');
+            showTestResult('audio-result');
+            btn.innerHTML = '<i class="fas fa-check"></i> Audio testé';
+            document.getElementById('audio-confirmation').style.display = 'block';
+        });
+
+        audio.addEventListener('error', (e) => {
+            console.log('Erreur audio, fallback');
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(
+                    document.getElementById('question0-speech-text').textContent
+                );
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.8;
+
+                utterance.onend = () => {
+                    showTestResult('audio-result');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Audio testé';
+                    document.getElementById('audio-confirmation').style.display = 'block';
+                };
+
+                speechSynthesis.speak(utterance);
+            }
+        });
+
+        audio.play().catch((error) => {
+            console.log('Fallback synthèse vocale');
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(
+                    document.getElementById('question0-speech-text').textContent
+                );
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.8;
+
+                utterance.onend = () => {
+                    showTestResult('audio-result');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Audio testé';
+                    document.getElementById('audio-confirmation').style.display = 'block';
+                };
+
+                speechSynthesis.speak(utterance);
+            }
+        });
+    }
+
+    function testMicrophone() {
+        console.log('🎤 Test microphone');
+        document.getElementById('microphone-test').style.display = 'block';
+    }
+
+    function startRecording() {
+        if (isRecording) return;
+
+        console.log('Démarrage enregistrement');
+
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert('Erreur : La reconnaissance vocale n\'est pas disponible.');
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+
+        recognition.lang = 'fr-FR';
+        recognition.continuous = true;
+        recognition.interimResults = false;
+
+        const btn = document.getElementById('recorder-btn');
+        const feedback = document.getElementById('recording-feedback');
+
+        recognition.onstart = () => {
+            console.log('Reconnaissance démarrée');
+            btn.innerHTML = '<i class="fas fa-stop"></i><span>🔴 Parlez...</span>';
+            btn.style.background = '#f44336';
+            isRecording = true;
+
+            feedback.style.display = 'block';
+            feedback.querySelector('.feedback-text').textContent = '🎤 Parlez maintenant...';
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript;
+            console.log('Résultat:', transcript);
+
+            feedback.querySelector('.feedback-text').textContent = '✅ Message capté : "' + transcript + '"';
+            feedback.querySelector('.feedback-text').style.color = '#4CAF50';
+
+            showTestResult('micro-result');
+            microTested = true;
+
+            setTimeout(() => {
+                if (recognition) recognition.stop();
+                btn.innerHTML = '<i class="fas fa-check"></i><span>✅ Testé</span>';
+                btn.style.background = '#4CAF50';
+                btn.disabled = true;
+                isRecording = false;
+                checkQ0ContinueButton();
+            }, 1500);
+        };
+
+        recognition.onerror = (event) => {
+            console.log('Erreur:', event.error);
+            if (event.error === 'not-allowed') {
+                alert('Vous devez autoriser l\'accès au microphone.');
+            }
+            if (recognition) recognition.stop();
+            btn.innerHTML = '<i class="fas fa-microphone"></i><span>🎤 Réessayer</span>';
+            btn.style.background = '';
+            isRecording = false;
+        };
+
+        try {
+            recognition.start();
+        } catch (error) {
+            console.log('Erreur:', error);
+            alert('Erreur : ' + error.message);
+        }
+    }
+
+    function showTestResult(resultId) {
+        document.getElementById(resultId).style.display = 'block';
+        document.getElementById('test-results').style.display = 'block';
+    }
+
+    function checkQ0ContinueButton() {
+        const btn = document.getElementById('q0-continue-btn');
+        if (audioConfirmed && microTested) {
+            btn.disabled = false;
+            btn.style.cursor = 'pointer';
+            btn.style.opacity = '1';
+        }
+    }
+
+    function startRealQuestionnaire() {
+        console.log('🚀 Démarrage questionnaire réel');
+
+        // Masquer Q0, afficher Q1-30
+        document.getElementById('question0-container').style.display = 'none';
+        document.getElementById('questions-container').style.display = 'block';
+
+        // Charger Q1
+        if (window.questionnaireManager) {
+            window.questionnaireManager.loadQuestion(1);
+        }
+
+        // Démarrer l'écoute continue
         setTimeout(() => {
             if (window.speechManager) {
                 window.speechManager.startContinuousSpeech();
-                // Afficher le statut
                 document.getElementById('listening-status').style.display = 'block';
             }
         }, 1000);
-    });
+    }
+
+    function updateProgress() {
+        const total = 30;
+        const percent = Math.round((currentQuestionNum / total) * 100);
+
+        document.getElementById('current-question').textContent = currentQuestionNum;
+        document.getElementById('progress-percent').textContent = percent;
+        document.getElementById('progress-fill').style.width = percent + '%';
+    }
 
     function previousQuestion() {
         if (window.questionnaireManager) {
@@ -146,19 +440,35 @@
         transform: translateY(0);
     }
 
-    .question-text {
-        /* Forcer le texte sur une seule ligne si trop long */
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .test-btn,
+    .recorder-btn {
+        padding: 0.8rem 1.5rem;
+        font-size: 1.1rem;
+        background: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        width: 100%;
     }
 
-    /* Version responsive pour petits écrans */
-    @media (max-width: 768px) {
-        .question-text {
-            white-space: normal;
-            overflow: visible;
-        }
+    .test-btn:hover,
+    .recorder-btn:hover {
+        background: #1976D2;
+        transform: translateY(-2px);
+    }
+
+    .test-btn:disabled,
+    .recorder-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
+    .continue-btn:disabled {
+        background: #ccc !important;
+        cursor: not-allowed !important;
+        opacity: 0.5;
     }
 </style>
 {% endblock %}

@@ -89,9 +89,10 @@ def validate_session(session_id):
 
 @api_bp.route("/get_question/<int:question_num>", methods=["GET"])
 def get_question(question_num):
-    """Récupérer une question"""
+    """Récupérer une question (incluant Q0)"""
     try:
-        if not (1 <= question_num <= 30):
+        # ✅ MODIFICATION : Accepter la question 0
+        if not (0 <= question_num <= 30):
             return jsonify({"error": "Numéro de question invalide"}), 400
 
         question = current_app.questionnaire.get_question(question_num)
@@ -299,12 +300,17 @@ def _get_audio_cache_path(text: str) -> Path:
 
 @api_bp.route("/get_audio/<int:question_num>")
 def get_audio(question_num):
-    """Servir fichier audio préenregistré pour une question"""
+    """Servir fichier audio préenregistré pour une question (incluant Q0)"""
     try:
         # Générer le texte de la question (même logique que lors de la pré-génération)
         from questionnaire_logic import EORTCQuestionnaire
 
         questionnaire = EORTCQuestionnaire()
+
+        # ✅ MODIFICATION : Accepter la question 0
+        if not (0 <= question_num <= 30):
+            return jsonify({"error": "Numéro de question invalide"}), 400
+
         speech_text = questionnaire.get_speech_text(question_num)
 
         print(f"DEBUG: Question {question_num}")
