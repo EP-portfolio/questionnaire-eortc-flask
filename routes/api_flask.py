@@ -249,8 +249,8 @@ def get_audio(question_num):
     try:
         # Chemin vers l'audio préenregistré
         audio_filename = f"question_{question_num}.wav"
-        # Chercher dans le sous-dossier Gemini TTS
-        audio_path = Path('static/audio_cache/gemini-2.5-pro-preview-tts_Achernar') / audio_filename
+        # Chercher directement dans static/audio_cache (fichiers copiés)
+        audio_path = Path('static/audio_cache') / audio_filename
         
         print(f"DEBUG: Recherche audio {audio_filename} dans {audio_path}")
         print(f"DEBUG: Chemin absolu: {audio_path.absolute()}")
