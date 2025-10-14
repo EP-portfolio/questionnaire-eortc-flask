@@ -52,7 +52,12 @@ def validate_session(session_id):
         session = db.get_session(session_id)
         
         if not session:
-            return jsonify({'valid': False, 'error': 'Session invalide'}), 400
+            # Retourner 200 avec valid: false au lieu de 400
+            return jsonify({
+                'valid': False, 
+                'error': 'Session invalide',
+                'message': 'Session non trouvée'
+            })
         
         return jsonify({
             'valid': True,
@@ -64,7 +69,11 @@ def validate_session(session_id):
         })
         
     except Exception as e:
-        return jsonify({'error': f'Erreur validation session: {str(e)}'}), 500
+        # Retourner 200 avec valid: false au lieu de 500
+        return jsonify({
+            'valid': False,
+            'error': f'Erreur validation session: {str(e)}'
+        })
 
 @api_bp.route('/get_question/<int:question_num>', methods=['GET'])
 def get_question(question_num):

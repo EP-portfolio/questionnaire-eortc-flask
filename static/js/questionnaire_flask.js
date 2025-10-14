@@ -23,10 +23,10 @@ class QuestionnaireManager {
             return;
         }
         
-        // Valider la session
-        const sessionValid = await this.validateSession();
+        // Valider la session (avec retry en cas d'échec)
+        const sessionValid = await this.validateSessionWithRetry();
         if (!sessionValid) {
-            console.error('Session invalide');
+            console.error('Session invalide après retry');
             alert('Erreur : Session invalide');
             return;
         }
@@ -62,6 +62,28 @@ class QuestionnaireManager {
             console.error('Erreur validation session:', error);
             return false;
         }
+    }
+    
+    async validateSessionWithRetry() {
+        // Essayer plusieurs fois avec des délais
+        const maxRetries = 3;
+        const retryDelay = 1000; // 1 seconde
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            console.log(`Tentative de validation session ${attempt}/${maxRetries}`);
+            
+            const isValid = await this.validateSession();
+            if (isValid) {
+                return true;
+            }
+            
+            if (attempt < maxRetries) {
+                console.log(`Attente ${retryDelay}ms avant nouvelle tentative...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
+        }
+        
+        return false;
     }
     
     async loadQuestion(questionNum) {
