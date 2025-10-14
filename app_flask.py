@@ -51,17 +51,18 @@ def create_app():
     except Exception as e:
         print(f"ERREUR initialisation base: {e}")
     
-    # Récupérer la clé API
+    # Configuration audio (sans API pour audios préenregistrés)
     api_key = os.environ.get('GOOGLE_CLOUD_API_KEY')
-    if api_key:
+    if api_key and api_key.strip():
         app.audio_handler = AudioHandler(
             api_key=api_key,
             use_gemini_tts=True,
             use_pro_model=True
         )
+        print("INFO: Audio handler configuré avec API TTS")
     else:
         app.audio_handler = None
-        print("ATTENTION: Clé API Google Cloud non configurée")
+        print("INFO: Mode audios préenregistrés uniquement (pas d'API TTS)")
     
     app.voice_handler = VoiceRecognitionHandler()
     

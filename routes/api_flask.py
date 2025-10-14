@@ -245,32 +245,22 @@ def save_manual_response():
 
 @api_bp.route('/get_audio/<int:question_num>')
 def get_audio(question_num):
-    """Servir le fichier audio d'une question"""
+    """Servir fichier audio préenregistré pour une question"""
     try:
-        if not current_app.audio_handler:
-            return jsonify({'error': 'Audio non disponible'}), 503
+        # Chemin vers l'audio préenregistré
+        audio_filename = f"question_{question_num}.wav"
+        audio_path = Path('static/audio_cache') / audio_filename
         
-        # Récupérer la question
-        question = current_app.questionnaire.get_question(question_num)
-        if not question:
-            return jsonify({'error': 'Question introuvable'}), 404
+        if audio_path.exists():
+            from flask import send_file
+            return send_file(
+                str(audio_path),
+                mimetype='audio/wav',
+                as_attachment=False
+            )
         
-        # Générer le texte de synthèse
-        speech_text = current_app.questionnaire.get_speech_text(question_num)
-        
-        # Récupérer le chemin du fichier audio
-        audio_path = current_app.audio_handler.get_audio_path(speech_text)
-        
-        if not audio_path or not audio_path.exists():
-            return jsonify({'error': 'Audio non disponible'}), 404
-        
-        # Servir le fichier audio
-        from flask import send_file
-        return send_file(
-            str(audio_path),
-            mimetype='audio/wav',
-            as_attachment=False
-        )
+        # Fallback : audio de test simple
+        return jsonify({'error': f'Audio préenregistré non trouvé: {audio_filename}'}), 404
         
     except Exception as e:
         return jsonify({'error': f'Erreur audio: {str(e)}'}), 500
