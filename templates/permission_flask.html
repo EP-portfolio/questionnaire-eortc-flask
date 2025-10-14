@@ -1,0 +1,254 @@
+{% extends "base_flask.html" %}
+
+{% block title %}Tests Navigateur - Questionnaire EORTC QLQ-C30{% endblock %}
+
+{% block content %}
+<div class="permission-page">
+    <!-- Titre principal -->
+    <div class="welcome-box">
+        <h1 class="welcome-title">
+            <i class="fas fa-hospital"></i>
+            Questionnaire EORTC QLQ-C30
+        </h1>
+        <p class="welcome-subtitle">Bienvenue ! Ce questionnaire évalue votre qualité de vie.</p>
+    </div>
+
+    <!-- Sélection navigateur -->
+    <div class="browser-selection" id="browser-selection">
+        <div class="info-box">
+            <h3 class="info-title">
+                <i class="fas fa-globe"></i>
+                Quel navigateur utilisez-vous ?
+            </h3>
+            <p class="info-text">
+                Cette information nous permet d'optimiser votre expérience
+            </p>
+        </div>
+
+        <div class="browser-buttons">
+            <button class="browser-btn browser-chrome" onclick="selectBrowser(true)">
+                <i class="fab fa-chrome"></i>
+                <span>Chrome ou Edge</span>
+                <small>Mode continu (1 clic)</small>
+            </button>
+            
+            <button class="browser-btn browser-other" onclick="selectBrowser(false)">
+                <i class="fas fa-browser"></i>
+                <span>Firefox, Safari ou autre</span>
+                <small>Mode standard</small>
+            </button>
+        </div>
+
+        <div class="browser-info">
+            <p class="info-tip">
+                <i class="fas fa-lightbulb"></i>
+                <strong>Chrome/Edge</strong> : Mode continu (1 seul clic) | 
+                <strong>Autres</strong> : Mode standard (clic par question)
+            </p>
+        </div>
+    </div>
+
+    <!-- Tests recommandés -->
+    <div class="tests-section" id="tests-section" style="display: none;">
+        <div class="info-box">
+            <h3 class="info-title">
+                <i class="fas fa-clipboard-check"></i>
+                Tests recommandés
+            </h3>
+            <p class="info-text">
+                <strong>1. Testez l'audio</strong> pour vérifier que vous entendez les questions<br>
+                <strong>2. Testez le microphone</strong> pour valider le fonctionnement<br>
+                <strong>3. Autorisez l'accès</strong> au micro dans le navigateur
+            </p>
+        </div>
+
+        <div class="test-buttons">
+            <div class="test-group">
+                <div class="test-box">
+                    <h4 class="test-title">
+                        <i class="fas fa-volume-up"></i>
+                        Audio
+                    </h4>
+                    <p class="test-desc">Les questions seront lues à voix haute.</p>
+                    <button class="test-btn" onclick="testAudio()">
+                        <i class="fas fa-play"></i>
+                        Tester l'audio
+                    </button>
+                </div>
+
+                <div class="test-box">
+                    <h4 class="test-title">
+                        <i class="fas fa-microphone"></i>
+                        Microphone
+                    </h4>
+                    <p class="test-desc">Validation du fonctionnement.</p>
+                    <button class="test-btn" onclick="testMicrophone()">
+                        <i class="fas fa-microphone"></i>
+                        Tester le micro
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test microphone -->
+        <div class="microphone-test" id="microphone-test" style="display: none;">
+            <div class="test-info">
+                <h4>Test : Cliquez, parlez, puis attendez 2 secondes</h4>
+            </div>
+            <div class="recorder-container">
+                <button class="recorder-btn" id="recorder-btn" onclick="startRecording()">
+                    <i class="fas fa-microphone"></i>
+                    <span>🎤 Tester</span>
+                </button>
+            </div>
+            <button class="cancel-btn" onclick="cancelMicrophoneTest()">
+                <i class="fas fa-times"></i>
+                Annuler
+            </button>
+        </div>
+
+        <!-- Résultats des tests -->
+        <div class="test-results" id="test-results" style="display: none;">
+            <div class="result-item" id="audio-result" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <span>Audio fonctionne !</span>
+            </div>
+            <div class="result-item" id="micro-result" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <span>Microphone fonctionne !</span>
+            </div>
+        </div>
+
+        <!-- Bouton continuer -->
+        <div class="continue-section">
+            <button class="continue-btn" id="continue-btn" onclick="continueToAccueil()" disabled>
+                <i class="fas fa-arrow-right"></i>
+                Continuer
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedBrowser = null;
+let audioTested = false;
+let microTested = false;
+let isRecording = false;
+let mediaRecorder = null;
+
+function selectBrowser(isChrome) {
+    selectedBrowser = isChrome;
+    
+    // Masquer la sélection
+    document.getElementById('browser-selection').style.display = 'none';
+    
+    // Afficher les tests
+    document.getElementById('tests-section').style.display = 'block';
+    
+    // Afficher le message selon le navigateur
+    const infoBox = document.querySelector('.info-box');
+    if (isChrome) {
+        infoBox.innerHTML = `
+            <h3 class="info-title">
+                <i class="fas fa-check-circle"></i>
+                Mode continu activé
+            </h3>
+            <p class="info-text">
+                <strong>→ 1 SEUL clic au démarrage</strong><br>
+                <strong>→ Parlez naturellement pour chaque question</strong><br>
+                <strong>→ Passage automatique à la question suivante</strong><br>
+                <strong>→ Boutons disponibles si besoin</strong>
+            </p>
+        `;
+    } else {
+        infoBox.innerHTML = `
+            <h3 class="info-title">
+                <i class="fas fa-info-circle"></i>
+                Mode standard
+            </h3>
+            <p class="info-text">
+                Cliquez sur le micro pour chaque question<br>
+                <strong>💡 Conseil :</strong> Utilisez Chrome ou Edge pour le mode continu
+            </p>
+        `;
+    }
+}
+
+function testAudio() {
+    // Simuler le test audio
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBS13yO/eizEIHWq+8+OWT');
+    
+    audio.play().then(() => {
+        showTestResult('audio-result');
+        audioTested = true;
+        checkContinueButton();
+    }).catch(() => {
+        alert('Erreur : Impossible de jouer l\'audio. Vérifiez vos paramètres.');
+    });
+}
+
+function testMicrophone() {
+    document.getElementById('microphone-test').style.display = 'block';
+}
+
+function startRecording() {
+    if (isRecording) return;
+    
+    const btn = document.getElementById('recorder-btn');
+    btn.innerHTML = '<i class="fas fa-stop"></i><span>🔴 Enregistrement...</span>';
+    btn.classList.add('recording');
+    
+    isRecording = true;
+    
+    // Simuler l'enregistrement
+    setTimeout(() => {
+        stopRecording();
+    }, 3000);
+}
+
+function stopRecording() {
+    if (!isRecording) return;
+    
+    const btn = document.getElementById('recorder-btn');
+    btn.innerHTML = '<i class="fas fa-microphone"></i><span>🎤 Tester</span>';
+    btn.classList.remove('recording');
+    
+    isRecording = false;
+    
+    // Simuler le succès
+    showTestResult('micro-result');
+    microTested = true;
+    checkContinueButton();
+    
+    // Masquer le test
+    document.getElementById('microphone-test').style.display = 'none';
+}
+
+function cancelMicrophoneTest() {
+    document.getElementById('microphone-test').style.display = 'none';
+}
+
+function showTestResult(resultId) {
+    document.getElementById(resultId).style.display = 'block';
+    document.getElementById('test-results').style.display = 'block';
+}
+
+function checkContinueButton() {
+    const continueBtn = document.getElementById('continue-btn');
+    if (audioTested && microTested) {
+        continueBtn.disabled = false;
+        continueBtn.classList.add('enabled');
+    }
+}
+
+function continueToAccueil() {
+    // Stocker les préférences
+    localStorage.setItem('browser_type', selectedBrowser ? 'chrome' : 'other');
+    localStorage.setItem('audio_tested', 'true');
+    localStorage.setItem('micro_tested', 'true');
+    
+    // Rediriger vers l'accueil
+    window.location.href = '/accueil';
+}
+</script>
+{% endblock %}

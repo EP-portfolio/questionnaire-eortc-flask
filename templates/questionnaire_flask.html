@@ -1,0 +1,378 @@
+{% extends "base_flask.html" %}
+
+{% block title %}Questionnaire - Question {{ current_question }}/30{% endblock %}
+
+{% block content %}
+<div class="questionnaire-page">
+    <!-- Header avec progression -->
+    <div class="question-header">
+        <div class="progress-section">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text">
+                <span id="current-question">1</span>/30 
+                (<span id="progress-percent">3</span>%)
+            </div>
+        </div>
+        
+        <div class="navigation-buttons">
+            <button class="nav-btn" id="prev-btn" onclick="previousQuestion()" disabled>
+                <i class="fas fa-arrow-left"></i>
+                Précédente
+            </button>
+            <button class="nav-btn" id="next-btn" onclick="nextQuestion()" disabled>
+                Suivante
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Question -->
+    <div class="question-container">
+        <div class="question-box" id="question-box">
+            <div class="question-number" id="question-number">Question 1</div>
+            <div class="question-text" id="question-text">
+                Chargement de la question...
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface vocale -->
+    <div class="voice-section" id="voice-section">
+        <h3 class="section-title">
+            <i class="fas fa-microphone"></i>
+            Réponse vocale
+        </h3>
+
+        <!-- Mode Web Speech API (Chrome/Edge) -->
+        <div class="web-speech-interface" id="web-speech-interface" style="display: none;">
+            <div class="speech-status" id="speech-status">
+                <div class="status-indicator" id="status-indicator">
+                    <i class="fas fa-microphone"></i>
+                </div>
+                <div class="status-text" id="status-text">
+                    Cliquez pour activer le micro continu
+                </div>
+            </div>
+            
+            <div class="speech-controls">
+                <button class="speech-btn" id="start-speech-btn" onclick="startContinuousSpeech()">
+                    <i class="fas fa-microphone"></i>
+                    🎤 ACTIVER MICRO CONTINU
+                </button>
+                <button class="speech-btn stop-btn" id="stop-speech-btn" onclick="stopContinuousSpeech()" style="display: none;">
+                    <i class="fas fa-stop"></i>
+                    Arrêter
+                </button>
+            </div>
+            
+            <div class="transcript-display" id="transcript-display">
+                <div class="transcript-text" id="transcript-text">
+                    En attente de votre réponse...
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode Fallback (Firefox/Safari) -->
+        <div class="fallback-interface" id="fallback-interface" style="display: none;">
+            <div class="recorder-container">
+                <button class="recorder-btn" id="recorder-btn" onclick="startRecording()">
+                    <i class="fas fa-microphone"></i>
+                    <span>🎤 Cliquer pour parler</span>
+                </button>
+            </div>
+            <div class="recording-status" id="recording-status" style="display: none;">
+                <div class="recording-indicator">
+                    <i class="fas fa-circle"></i>
+                    Enregistrement en cours...
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages spéciaux pour Q29-30 -->
+        <div class="special-message" id="special-message" style="display: none;">
+            <div class="warning-box">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Si votre réponse est <strong>1</strong>, répétez <strong>"un"</strong> plusieurs fois</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boutons de réponse manuelle -->
+    <div class="manual-section">
+        <h3 class="section-title">
+            <i class="fas fa-hand-pointer"></i>
+            Réponse manuelle (si besoin)
+        </h3>
+        
+        <div class="response-buttons" id="response-buttons">
+            <!-- Sera rempli par JavaScript -->
+        </div>
+    </div>
+
+    <!-- Réponse actuelle -->
+    <div class="current-response" id="current-response" style="display: none;">
+        <div class="response-box">
+            <i class="fas fa-check-circle"></i>
+            <span id="response-text">Réponse enregistrée</span>
+        </div>
+    </div>
+
+    <!-- Contrôles audio -->
+    <div class="audio-controls">
+        <button class="audio-btn" id="play-audio-btn" onclick="playQuestionAudio()">
+            <i class="fas fa-play"></i>
+            🔊 Écouter la question
+        </button>
+        <button class="audio-btn" id="stop-audio-btn" onclick="stopAudio()" style="display: none;">
+            <i class="fas fa-stop"></i>
+            ⏸️ Arrêter
+        </button>
+    </div>
+</div>
+
+<!-- Modal de confirmation -->
+<div class="modal" id="confirmation-modal">
+    <div class="modal-content">
+        <h3>Confirmer la réponse</h3>
+        <p>Vous avez dit : "<span id="modal-transcript"></span>"</p>
+        <p>Interprété comme : <strong id="modal-interpretation"></strong></p>
+        <div class="modal-buttons">
+            <button class="modal-btn confirm-btn" onclick="confirmResponse()">
+                <i class="fas fa-check"></i>
+                Confirmer
+            </button>
+            <button class="modal-btn cancel-btn" onclick="cancelResponse()">
+                <i class="fas fa-times"></i>
+                Annuler
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/speech_recognition.js') }}"></script>
+<script>
+// Variables globales
+let currentQuestion = 1;
+let sessionId = '{{ session_id }}';
+let questionData = null;
+let isWebSpeechMode = false;
+let speechRecognition = null;
+let isListening = false;
+let currentAudio = null;
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Vérifier le mode navigateur
+    const browserType = localStorage.getItem('browser_type');
+    isWebSpeechMode = browserType === 'chrome';
+    
+    // Afficher la bonne interface
+    if (isWebSpeechMode) {
+        document.getElementById('web-speech-interface').style.display = 'block';
+    } else {
+        document.getElementById('fallback-interface').style.display = 'block';
+    }
+    
+    // Charger la première question
+    loadQuestion(1);
+    
+    // Initialiser la reconnaissance vocale si disponible
+    if (isWebSpeechMode) {
+        initSpeechRecognition();
+    }
+});
+
+async function loadQuestion(questionNum) {
+    try {
+        currentQuestion = questionNum;
+        
+        // Mettre à jour l'interface
+        updateProgress();
+        updateNavigationButtons();
+        
+        // Charger les données de la question
+        const response = await fetch(`/api/get_question/${questionNum}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            questionData = result.question;
+            displayQuestion(questionData);
+            createResponseButtons(questionData);
+            
+            // Afficher le message spécial pour Q29-30
+            if (questionNum >= 29) {
+                document.getElementById('special-message').style.display = 'block';
+            } else {
+                document.getElementById('special-message').style.display = 'none';
+            }
+            
+            // Lecture automatique si audio activé
+            if (localStorage.getItem('audio_enabled') === 'true') {
+                setTimeout(() => playQuestionAudio(), 1000);
+            }
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        console.error('Erreur chargement question:', error);
+        alert('Erreur : ' + error.message);
+    }
+}
+
+function displayQuestion(question) {
+    document.getElementById('question-number').textContent = `Question ${currentQuestion}`;
+    document.getElementById('question-text').textContent = question.text;
+}
+
+function createResponseButtons(question) {
+    const container = document.getElementById('response-buttons');
+    container.innerHTML = '';
+    
+    const scale = question.scale;
+    const options = question.options;
+    const numButtons = scale === '1-4' ? 4 : 7;
+    
+    for (let i = 0; i < numButtons; i++) {
+        const button = document.createElement('button');
+        button.className = 'response-btn';
+        button.innerHTML = `${i + 1}. ${options[i]}`;
+        button.onclick = () => selectManualResponse(i + 1);
+        container.appendChild(button);
+    }
+}
+
+function updateProgress() {
+    const progress = (currentQuestion - 1) / 30 * 100;
+    document.getElementById('progress-fill').style.width = progress + '%';
+    document.getElementById('current-question').textContent = currentQuestion;
+    document.getElementById('progress-percent').textContent = Math.round(progress);
+}
+
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    
+    prevBtn.disabled = currentQuestion <= 1;
+    nextBtn.disabled = currentQuestion >= 30;
+}
+
+function previousQuestion() {
+    if (currentQuestion > 1) {
+        loadQuestion(currentQuestion - 1);
+    }
+}
+
+function nextQuestion() {
+    if (currentQuestion < 30) {
+        loadQuestion(currentQuestion + 1);
+    }
+}
+
+async function selectManualResponse(score) {
+    try {
+        const response = await fetch('/api/save_manual_response', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                question_num: currentQuestion,
+                score: score
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showResponseConfirmation(result.response_text, 'Manuel');
+            
+            if (result.is_complete) {
+                // Questionnaire terminé
+                setTimeout(() => {
+                    window.location.href = `/resultat/${sessionId}`;
+                }, 2000);
+            } else {
+                // Question suivante
+                setTimeout(() => {
+                    loadQuestion(result.next_question);
+                }, 2000);
+            }
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        console.error('Erreur sauvegarde manuelle:', error);
+        alert('Erreur : ' + error.message);
+    }
+}
+
+function showResponseConfirmation(responseText, type) {
+    const responseBox = document.getElementById('current-response');
+    const responseTextEl = document.getElementById('response-text');
+    
+    responseTextEl.textContent = `${type}: ${responseText}`;
+    responseBox.style.display = 'block';
+    
+    // Masquer après 3 secondes
+    setTimeout(() => {
+        responseBox.style.display = 'none';
+    }, 3000);
+}
+
+async function playQuestionAudio() {
+    try {
+        const response = await fetch(`/api/get_audio/${currentQuestion}`);
+        
+        if (response.ok) {
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            
+            if (currentAudio) {
+                currentAudio.pause();
+            }
+            
+            currentAudio = new Audio(audioUrl);
+            currentAudio.play();
+            
+            // Afficher le bouton stop
+            document.getElementById('play-audio-btn').style.display = 'none';
+            document.getElementById('stop-audio-btn').style.display = 'inline-block';
+            
+            currentAudio.onended = () => {
+                document.getElementById('play-audio-btn').style.display = 'inline-block';
+                document.getElementById('stop-audio-btn').style.display = 'none';
+            };
+        } else {
+            throw new Error('Audio non disponible');
+        }
+    } catch (error) {
+        console.error('Erreur lecture audio:', error);
+        alert('Erreur : Impossible de lire l\'audio');
+    }
+}
+
+function stopAudio() {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+    }
+    
+    document.getElementById('play-audio-btn').style.display = 'inline-block';
+    document.getElementById('stop-audio-btn').style.display = 'none';
+}
+
+// Gestion de la reconnaissance vocale (sera implémentée dans speech_recognition.js)
+function startContinuousSpeech() {
+    // Implémenté dans speech_recognition.js
+}
+
+function stopContinuousSpeech() {
+    // Implémenté dans speech_recognition.js
+}
+
+function startRecording() {
+    // Implémenté dans speech_recognition.js
+}
+</script>
+{% endblock %}

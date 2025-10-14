@@ -1,0 +1,35 @@
+# Dépendances pour l'application Flask EORTC QLQ-C30
+# Version avec reconnaissance vocale continue
+
+# Framework Flask
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# Base de données
+SQLAlchemy==2.0.23
+Flask-SQLAlchemy==3.1.1
+
+# Traitement des données
+pandas==2.1.0
+numpy==1.24.3
+
+# Audio et reconnaissance vocale
+requests==2.31.0
+google-cloud-texttospeech==2.16.0
+SpeechRecognition==3.10.0
+pygame==2.5.2
+
+# Export de données
+openpyxl==3.1.2
+
+# Configuration et sécurité
+python-dotenv==1.0.0
+Werkzeug==3.0.1
+
+# Utilitaires
+pathlib2==2.3.7
+hashlib-compat==1.0.1
+
+# Développement (optionnel)
+# flask-debugtoolbar==0.13.1
+# flask-migrate==4.0.5

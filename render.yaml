@@ -1,0 +1,20 @@
+# Configuration Render pour le déploiement automatique
+services:
+  - type: web
+    name: questionnaire-eortc-flask
+    env: python
+    buildCommand: pip install -r requirements_flask.txt
+    startCommand: python app_flask.py
+    envVars:
+      - key: SECRET_KEY
+        value: production-secret-key-change-me
+      - key: FLASK_DEBUG
+        value: False
+      - key: AUDIO_ENABLED
+        value: True
+      - key: USE_GEMINI_TTS
+        value: True
+      - key: USE_PRO_MODEL
+        value: True
+    healthCheckPath: /api/health
+    autoDeploy: true

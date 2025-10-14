@@ -1,0 +1,261 @@
+{% extends "base_flask.html" %}
+
+{% block title %}Informations Personnelles - Questionnaire EORTC QLQ-C30{% endblock %}
+
+{% block content %}
+<div class="accueil-page">
+    <!-- Message selon navigateur -->
+    <div class="browser-info" id="browser-info">
+        <!-- Sera rempli par JavaScript -->
+    </div>
+
+    <!-- Formulaire informations personnelles -->
+    <div class="form-section">
+        <h2 class="form-title">
+            <i class="fas fa-user"></i>
+            Informations personnelles
+        </h2>
+
+        <form id="personal-form" class="personal-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="initials" class="form-label">
+                        <i class="fas fa-signature"></i>
+                        Initiales
+                    </label>
+                    <input type="text" id="initials" name="initials" class="form-input" 
+                           maxlength="10" placeholder="Ex: A B" required>
+                    <small class="form-help">Vos initiales (ex: A B pour André Bernard)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="birth_date" class="form-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        Date de naissance
+                    </label>
+                    <input type="date" id="birth_date" name="birth_date" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="today_date" class="form-label">
+                        <i class="fas fa-calendar-check"></i>
+                        Date d'aujourd'hui
+                    </label>
+                    <input type="date" id="today_date" name="today_date" class="form-input" required>
+                </div>
+            </div>
+
+            <div class="form-options">
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="audio_enabled" name="audio_enabled" checked>
+                        <span class="checkmark"></span>
+                        <i class="fas fa-volume-up"></i>
+                        Lecture audio des questions
+                    </label>
+                </div>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="consent" name="consent" required>
+                        <span class="checkmark"></span>
+                        <i class="fas fa-shield-alt"></i>
+                        J'accepte le traitement anonyme de mes données (RGPD)
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn" id="submit-btn" disabled>
+                    <i class="fas fa-microphone"></i>
+                    COMMENCER
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Aide contextuelle -->
+    <div class="help-section">
+        <h3 class="help-title">
+            <i class="fas fa-question-circle"></i>
+            Aide
+        </h3>
+        <div class="help-buttons">
+            <button class="help-btn" onclick="showHelp('initials')">
+                <i class="fas fa-signature"></i>
+                Initiales
+            </button>
+            <button class="help-btn" onclick="showHelp('birth')">
+                <i class="fas fa-calendar-alt"></i>
+                Naissance
+            </button>
+            <button class="help-btn" onclick="showHelp('today')">
+                <i class="fas fa-calendar-check"></i>
+                Aujourd'hui
+            </button>
+            <button class="help-btn" onclick="showHelp('audio')">
+                <i class="fas fa-volume-up"></i>
+                Audio
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Définir la date d'aujourd'hui par défaut
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('today_date').value = today;
+    
+    // Définir une date de naissance par défaut (1970)
+    document.getElementById('birth_date').value = '1970-01-01';
+    
+    // Afficher les informations du navigateur
+    displayBrowserInfo();
+    
+    // Gérer le formulaire
+    setupFormHandlers();
+});
+
+function displayBrowserInfo() {
+    const browserType = localStorage.getItem('browser_type');
+    const infoBox = document.getElementById('browser-info');
+    
+    if (browserType === 'chrome') {
+        infoBox.innerHTML = `
+            <div class="success-box">
+                <h3><i class="fas fa-check-circle"></i> Mode continu activé</h3>
+                <p>
+                    <strong>→ 1 SEUL clic au démarrage</strong><br>
+                    <strong>→ Parlez naturellement pour chaque question</strong><br>
+                    <strong>→ Passage automatique à la question suivante</strong><br>
+                    <strong>→ Boutons disponibles si besoin</strong>
+                </p>
+            </div>
+        `;
+    } else {
+        infoBox.innerHTML = `
+            <div class="info-box">
+                <h3><i class="fas fa-info-circle"></i> Mode standard</h3>
+                <p>
+                    Cliquez sur le micro pour chaque question<br>
+                    <strong>💡 Conseil :</strong> Utilisez Chrome ou Edge pour le mode continu
+                </p>
+            </div>
+        `;
+    }
+}
+
+function setupFormHandlers() {
+    const form = document.getElementById('personal-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const consentCheckbox = document.getElementById('consent');
+    
+    // Gérer la validation du formulaire
+    function validateForm() {
+        const initials = document.getElementById('initials').value.trim();
+        const birthDate = document.getElementById('birth_date').value;
+        const todayDate = document.getElementById('today_date').value;
+        const consent = consentCheckbox.checked;
+        
+        if (initials && birthDate && todayDate && consent) {
+            submitBtn.disabled = false;
+            submitBtn.classList.add('enabled');
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('enabled');
+        }
+    }
+    
+    // Écouter les changements
+    form.addEventListener('input', validateForm);
+    form.addEventListener('change', validateForm);
+    
+    // Gérer la soumission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitForm();
+    });
+}
+
+function submitForm() {
+    const form = document.getElementById('personal-form');
+    const formData = new FormData(form);
+    
+    const data = {
+        initials: formData.get('initials'),
+        birth_date: formData.get('birth_date'),
+        today_date: formData.get('today_date'),
+        audio_enabled: formData.get('audio_enabled') === 'on',
+        mode: localStorage.getItem('browser_type') === 'chrome' ? 'Continu (Web Speech)' : 'Standard'
+    };
+    
+    // Afficher le loading
+    const submitBtn = document.getElementById('submit-btn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création de la session...';
+    submitBtn.disabled = true;
+    
+    // Créer la session
+    fetch('/api/start_session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Stocker l'ID de session
+            localStorage.setItem('session_id', result.session_id);
+            
+            // Rediriger vers le questionnaire
+            window.location.href = `/questionnaire?session_id=${result.session_id}`;
+        } else {
+            throw new Error(result.error || 'Erreur création session');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur : ' + error.message);
+        
+        // Restaurer le bouton
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+function showHelp(type) {
+    let message = '';
+    
+    switch(type) {
+        case 'initials':
+            message = 'Saisissez vos initiales. Par exemple, A B pour André Bernard.';
+            break;
+        case 'birth':
+            message = 'Sélectionnez votre date de naissance dans le calendrier.';
+            break;
+        case 'today':
+            const today = new Date();
+            const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+                          'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+            message = `La date est le ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}.`;
+            break;
+        case 'audio':
+            message = 'Activez pour entendre les questions.';
+            break;
+    }
+    
+    // Utiliser l'API de synthèse vocale si disponible
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.lang = 'fr-FR';
+        speechSynthesis.speak(utterance);
+    } else {
+        alert(message);
+    }
+}
+</script>
+{% endblock %}
