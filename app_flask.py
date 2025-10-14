@@ -16,7 +16,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 # Importer les modules existants
 from questionnaire_logic import EORTCQuestionnaire
-from audio_handler_gcp_tts import AudioHandler, VoiceRecognitionHandler
+from audio_handler_web_flask import AudioHandlerWeb as AudioHandler, VoiceRecognitionHandler
 
 # Importer les routes
 from routes.main import main_bp

@@ -1,22 +1,19 @@
-# Dépendances optimisées pour Render avec Python 3.13
-# Version compatible avec le déploiement en ligne
+# Dépendances optimisées pour Render - Version sans pygame
+# pygame nécessite des bibliothèques système non disponibles sur Render
 
 # Framework Flask
 Flask==3.0.0
 Flask-CORS==4.0.0
 
-# Base de données (SQLite intégré)
-# Pas besoin de SQLAlchemy pour SQLite simple
-
 # Traitement des données (versions compatibles Python 3.13)
 pandas>=2.2.0
 numpy>=1.24.0
 
-# Audio et reconnaissance vocale
+# Audio et reconnaissance vocale (sans pygame)
 requests==2.31.0
 google-cloud-texttospeech==2.16.0
 SpeechRecognition==3.10.0
-pygame==2.5.2
+# pygame==2.5.2  # ← Supprimé car nécessite SDL2
 
 # Export de données
 openpyxl==3.1.2
