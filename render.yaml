@@ -1,25 +1,50 @@
-# Configuration Render optimisée pour le questionnaire EORTC QLQ-C30
 services:
   - type: web
     name: questionnaire-eortc-flask
     env: python
-    pythonVersion: "3.11.9"
-    buildCommand: |
-      pip install --upgrade pip
-      pip install -r requirements_flask.txt
-    startCommand: python app_flask.py
+    region: frankfurt  # ou oregon, singapore selon ta préférence
+    
+    # ✅ Configuration du build
+    buildCommand: pip install -r requirements_flask.txt
+    
+    # ✅ Commande de démarrage (Gunicorn)
+    # Render lira automatiquement le Procfile, mais on peut aussi le définir ici
+    startCommand: gunicorn app_flask:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --log-level info
+    
+    # ✅ Configuration du plan
+    plan: free  # ou starter/standard selon tes besoins
+    
+    # ✅ Variables d'environnement CRITIQUES
     envVars:
-      - key: SECRET_KEY
-        value: 0RE4oaorR674&%23wQqq0E!pPP8QO6N8KaNXeIK7xb3VLiiPMS9JaRZY502yAAaw
       - key: FLASK_ENV
         value: production
+      
+      - key: SECRET_KEY
+        generateValue: true  # Render génère une clé aléatoire sécurisée
+      
       - key: AUDIO_ENABLED
-        value: True
+        value: true
+      
       - key: USE_GEMINI_TTS
-        value: False
+        value: false
+      
       - key: USE_PRO_MODEL
-        value: False
+        value: true
+      
+      # ⚠️ À AJOUTER MANUELLEMENT dans le dashboard Render (Secret File)
+      # car c'est une valeur secrète
       - key: GOOGLE_CLOUD_API_KEY
-        value: ""
+        sync: false  # Tu devras l'ajouter manuellement
+    
+    # ✅ Health check pour vérifier que l'app fonctionne
     healthCheckPath: /api/health
-    autoDeploy: true
+    
+    # ✅ Paramètres de déploiement
+    autoDeploy: true  # Déploiement auto à chaque push Git
+    
+    # ✅ Disques persistants (pour la base de données SQLite)
+    disk:
+      name: questionnaire-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+

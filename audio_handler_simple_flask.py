@@ -1,6 +1,6 @@
 """
 Gestionnaire audio simplifié pour le web (sans pygame ni speech_recognition)
-Version optimisée pour le déploiement sur Render avec Python 3.13
+Version optimisée avec reconnaissance vocale STRICTE
 """
 
 import requests
@@ -13,6 +13,7 @@ import wave
 import struct
 from typing import Optional, List
 from pathlib import Path
+import re
 
 
 class AudioHandlerSimple:
@@ -26,11 +27,6 @@ class AudioHandlerSimple:
     ):
         """
         Initialise le gestionnaire audio pour le web
-
-        Args:
-            api_key: Clé API Google Cloud
-            use_gemini_tts: True pour Gemini TTS (Achernar), False pour Cloud TTS (Neural2)
-            use_pro_model: True pour Gemini Pro TTS, False pour Flash TTS
         """
         # Clé API
         self.api_key = api_key or os.environ.get("GOOGLE_CLOUD_API_KEY")
@@ -95,169 +91,12 @@ class AudioHandlerSimple:
 
         return wav_buffer.getvalue()
 
-    def _synthesize_speech_gemini(
-        self, text: str, add_style_prompt: bool = True
-    ) -> Optional[bytes]:
-        """Appelle Gemini TTS API avec instructions de style"""
-        headers = {"Content-Type": "application/json", "x-goog-api-key": self.api_key}
-
-        if add_style_prompt:
-            styled_text = f"En français de France standard, avec une diction claire et neutre : {text}"
-        else:
-            styled_text = text
-
-        payload = {
-            "contents": [{"parts": [{"text": styled_text}]}],
-            "generationConfig": {
-                "responseModalities": ["AUDIO"],
-                "speechConfig": {
-                    "voiceConfig": {
-                        "prebuiltVoiceConfig": {"voiceName": self.voice_name}
-                    }
-                },
-            },
-        }
-
-        try:
-            response = requests.post(
-                self.api_url, headers=headers, json=payload, timeout=30
-            )
-
-            if response.status_code == 200:
-                data = response.json()
-                import base64
-
-                pcm_b64 = data["candidates"][0]["content"]["parts"][0]["inlineData"][
-                    "data"
-                ]
-                pcm_data = base64.b64decode(pcm_b64)
-                wav_data = self._pcm_to_wav(pcm_data)
-                return wav_data
-            else:
-                print(f"ERROR Erreur Gemini TTS: {response.status_code}")
-                return None
-
-        except Exception as e:
-            print(f"ERROR Erreur Gemini TTS: {e}")
-            return None
-
-    def _synthesize_speech_cloud(self, text: str) -> Optional[bytes]:
-        """Appelle Cloud Text-to-Speech API"""
-        headers = {"Content-Type": "application/json", "X-Goog-Api-Key": self.api_key}
-
-        payload = {
-            "audioConfig": {
-                "audioEncoding": "LINEAR16",
-                "pitch": 0,
-                "speakingRate": 1,
-                "sampleRateHertz": 24000,
-            },
-            "input": {"text": text},
-            "voice": {"languageCode": self.language_code, "name": self.voice_name},
-        }
-
-        try:
-            response = requests.post(
-                self.api_url, headers=headers, json=payload, timeout=10
-            )
-
-            if response.status_code == 200:
-                data = response.json()
-                import base64
-
-                pcm_data = base64.b64decode(data["audioContent"])
-                wav_data = self._pcm_to_wav(pcm_data)
-                return wav_data
-            else:
-                print(f"ERROR Erreur Cloud TTS: {response.status_code}")
-                return None
-
-        except Exception as e:
-            print(f"ERROR Erreur Cloud TTS: {e}")
-            return None
-
-    def _synthesize_speech(self, text: str) -> Optional[bytes]:
-        """Synthétise la parole (dispatch vers la bonne API)"""
-        if not self.api_key:
-            print("ERROR Impossible de synthétiser: clé API manquante")
-            return None
-
-        if self.use_gemini_tts:
-            return self._synthesize_speech_gemini(text, add_style_prompt=True)
-        else:
-            return self._synthesize_speech_cloud(text)
-
-    def _get_or_create_audio(self, text: str) -> Optional[Path]:
-        """Récupère l'audio depuis le cache ou le génère"""
-        cache_path = self._get_cache_path(text, use_style_prompt=True)
-
-        # Vérifier si déjà en cache
-        if cache_path.exists():
-            if cache_path.stat().st_size > 0:
-                return cache_path
-            else:
-                print(f"WARNING Fichier cache corrompu, régénération...")
-                cache_path.unlink()
-
-        # Générer le nouveau fichier audio
-        api_name = f"{self.model}" if self.use_gemini_tts else "Cloud TTS"
-        print(f"Audio Génération audio via {api_name}...")
-
-        audio_data = self._synthesize_speech(text)
-
-        if audio_data:
-            try:
-                cache_path.write_bytes(audio_data)
-                print(f"OK Audio généré et mis en cache ({len(audio_data)} bytes)")
-                return cache_path
-            except Exception as e:
-                print(f"ERROR Erreur sauvegarde cache: {e}")
-                return None
-
-        return None
-
     def get_audio_path(self, text: str) -> Optional[Path]:
         """Retourne le chemin du fichier audio (pour lecture web)"""
-        return self._get_or_create_audio(text)
-
-    def pregenerate_audio(self, texts: List[str], progress_callback=None):
-        """Pré-génère tous les audios pour une liste de textes"""
-        if not texts:
-            return
-
-        print(f"\nAudio Pré-génération de {len(texts)} audios...")
-        print(f"Cache Cache : {self.cache_dir}")
-
-        total = len(texts)
-        generated = 0
-        cached = 0
-
-        for idx, text in enumerate(texts, 1):
-            cache_path = self._get_cache_path(text)
-
-            if cache_path.exists() and cache_path.stat().st_size > 0:
-                cached += 1
-                status = "OK Deja en cache"
-            else:
-                audio_path = self._get_or_create_audio(text)
-                if audio_path:
-                    generated += 1
-                    status = "OK Genere"
-                else:
-                    status = "ERREUR"
-
-            print(f"  [{idx}/{total}] {status}")
-
-            if progress_callback:
-                progress_callback(idx, total)
-
-            if generated > 0:
-                time.sleep(0.5)
-
-        print(f"\nOK Pre-generation terminee !")
-        print(f"   • {cached} deja en cache")
-        print(f"   • {generated} nouvellement generes")
-        print(f"   • Total : {cached + generated}/{total}")
+        cache_path = self._get_cache_path(text)
+        if cache_path.exists():
+            return cache_path
+        return None
 
     def get_cache_info(self) -> dict:
         """Retourne des informations détaillées sur le cache"""
@@ -287,6 +126,36 @@ class VoiceRecognitionHandler:
         print("INFO Reconnaissance vocale configurée pour Web Speech API uniquement")
         print("INFO Utilisation de JavaScript Web Speech API (client-side)")
 
+    def _normalize_text(self, text: str) -> str:
+        """Normalise le texte pour la comparaison"""
+        # Supprimer ponctuation, mettre en minuscule, supprimer espaces multiples
+        text = text.lower().strip()
+        text = re.sub(r"[^\w\s]", " ", text)  # Remplacer ponctuation par espace
+        text = re.sub(r"\s+", " ", text)  # Supprimer espaces multiples
+        return text
+
+    def _is_exact_word_match(self, text: str, keywords: list) -> bool:
+        """
+        Vérifie si UN mot exact de la liste est présent (pas juste une sous-chaîne)
+        """
+        text_normalized = self._normalize_text(text)
+        words = text_normalized.split()
+
+        for keyword in keywords:
+            keyword_normalized = self._normalize_text(keyword)
+            # Vérifier mot exact
+            if keyword_normalized in words:
+                return True
+            # OU vérifier expression exacte (pour "pas du tout", "un peu", etc.)
+            if keyword_normalized in text_normalized:
+                # S'assurer que c'est bien l'expression complète
+                # avec des délimiteurs (début, fin, ou espaces)
+                pattern = r"\b" + re.escape(keyword_normalized) + r"\b"
+                if re.search(pattern, text_normalized):
+                    return True
+
+        return False
+
     def interpret_response(self, text: str, scale: str) -> Optional[int]:
         """Interprète une réponse vocale et retourne le score"""
         if not text:
@@ -295,7 +164,11 @@ class VoiceRecognitionHandler:
         text = text.lower().strip()
         print(f"DEBUG - Texte reconnu: '{text}' (echelle: {scale})")
         print(f"DEBUG - Longueur du texte: {len(text)} caracteres")
-        print(f"DEBUG - Mots detectes: {text.split()}")
+
+        # ✅ CORRECTION : Rejeter les phrases trop longues (> 30 caractères)
+        if len(text) > 30:
+            print("ERREUR - Phrase trop longue, probablement pas une réponse valide")
+            return None
 
         # Rejeter explicitement les mots non-valides
         invalid_words = [
@@ -307,167 +180,127 @@ class VoiceRecognitionHandler:
             "next",
             "skip",
             "ignorer",
+            "je",
+            "pense",
+            "que",
         ]
-        if any(word in text for word in invalid_words):
+        if any(word in text.split() for word in invalid_words):
             print("ERREUR - Mot non-valide detecte, rejete")
             return None
 
         if scale == "1-4":
-            # Vérifier d'abord les expressions complètes (plus spécifiques)
-            if any(phrase in text for phrase in ["pas du tout", "jamais", "aucun"]):
+            # ✅ Ordre de priorité : expressions complètes PUIS mots individuels
+
+            # 1. Expressions multi-mots (priorité maximale)
+            if self._is_exact_word_match(text, ["pas du tout", "jamais"]):
                 print("OK - Reconnu comme: 1 (pas du tout)")
                 return 1
-            elif any(
-                phrase in text
-                for phrase in [
-                    "beaucoup",
-                    "tres",
-                    "tout a fait",
-                    "completement",
-                    "enormement",
-                ]
-            ):
-                print("OK - Reconnu comme: 4 (beaucoup)")
-                return 4
-            elif any(
-                phrase in text for phrase in ["assez", "moyennement", "moderement"]
-            ):
-                print("OK - Reconnu comme: 3 (assez)")
-                return 3
-            elif any(phrase in text for phrase in ["un peu", "legerement"]):
+
+            if self._is_exact_word_match(text, ["un peu", "legerement"]):
                 print("OK - Reconnu comme: 2 (un peu)")
                 return 2
 
-            # Vérifier ensuite les mots individuels (moins spécifiques)
-            elif any(
-                word in text
-                for word in [
-                    "beaucoup",
-                    "boucoup",
-                    "bocou",
-                    "boku",
-                    "bocoup",
-                    "beaukou",
-                    "beaucou",
-                    "bokoup",
-                    "bocou",
-                    "boku",
-                    "bocoup",
-                    "beaukou",
-                    "beaucou",
-                    "bokoup",
-                ]
+            if self._is_exact_word_match(text, ["assez", "moyennement", "moderement"]):
+                print("OK - Reconnu comme: 3 (assez)")
+                return 3
+
+            if self._is_exact_word_match(
+                text, ["beaucoup", "tres", "enormement", "completement", "tout a fait"]
             ):
                 print("OK - Reconnu comme: 4 (beaucoup)")
                 return 4
-            elif any(
-                word in text
-                for word in [
-                    "assez",
-                    "aise",
-                    "aisez",
-                    "aisee",
-                    "aisees",
-                    "ase",
-                    "asez",
-                    "ase",
-                    "asee",
-                    "acer",
-                    "acez",
-                    "asser",
-                    "assey",
-                ]
-            ):
-                print("OK - Reconnu comme: 3 (assez)")
-                return 3
-            elif any(word in text for word in ["peu"]):
-                print("OK - Reconnu comme: 2 (un peu)")
-                return 2
-            elif any(word in text for word in ["pas"]):
-                print("OK - Reconnu comme: 1 (pas du tout)")
+
+            # 2. Chiffres en français (mots exacts seulement)
+            words = text.split()
+
+            if "un" in words or "une" in words:
+                print("OK - Reconnu comme: 1 (chiffre 'un')")
                 return 1
+
+            if "deux" in words:
+                print("OK - Reconnu comme: 2 (chiffre 'deux')")
+                return 2
+
+            if "trois" in words or "troi" in words:
+                print("OK - Reconnu comme: 3 (chiffre 'trois')")
+                return 3
+
+            if "quatre" in words or "quatr" in words:
+                print("OK - Reconnu comme: 4 (chiffre 'quatre')")
+                return 4
+
+            # 3. Chiffres arabes (si présents seuls)
+            if text in ["1", "2", "3", "4"]:
+                score = int(text)
+                print(f"OK - Reconnu comme: {score} (chiffre)")
+                return score
 
         elif scale == "1-7":
-            if any(word in text for word in ["tres mauvais", "horrible", "terrible"]):
+            # Expressions qualitatives
+            if self._is_exact_word_match(
+                text, ["tres mauvais", "horrible", "terrible"]
+            ):
                 print("OK - Reconnu comme: 1 (tres mauvais)")
                 return 1
-            elif any(word in text for word in ["mauvais", "mal"]):
+
+            if self._is_exact_word_match(text, ["mauvais", "mal"]):
                 print("OK - Reconnu comme: 2 (mauvais)")
                 return 2
-            elif any(word in text for word in ["plutot mauvais", "pas bien"]):
+
+            if self._is_exact_word_match(text, ["plutot mauvais", "pas bien"]):
                 print("OK - Reconnu comme: 3 (plutot mauvais)")
                 return 3
-            elif any(word in text for word in ["moyen", "neutre", "correct"]):
+
+            if self._is_exact_word_match(text, ["moyen", "neutre", "correct"]):
                 print("OK - Reconnu comme: 4 (moyen)")
                 return 4
-            elif any(
-                word in text for word in ["plutot bon", "plutot bien", "assez bien"]
+
+            if self._is_exact_word_match(
+                text, ["plutot bon", "plutot bien", "assez bien"]
             ):
                 print("OK - Reconnu comme: 5 (plutot bon)")
                 return 5
-            elif any(word in text for word in ["bon", "bien"]):
+
+            if self._is_exact_word_match(text, ["bon", "bien"]):
                 print("OK - Reconnu comme: 6 (bon)")
                 return 6
-            elif any(
-                word in text for word in ["tres bon", "excellent", "parfait", "super"]
+
+            if self._is_exact_word_match(
+                text, ["tres bon", "excellent", "parfait", "super"]
             ):
                 print("OK - Reconnu comme: 7 (excellent)")
                 return 7
 
-        # Dictionnaire étendu avec variantes phonétiques
-        numbers = {
-            # Chiffres en français
-            "un": 1,
-            "une": 1,
-            "deux": 2,
-            "trois": 3,
-            "quatre": 4,
-            "cinq": 5,
-            "six": 6,
-            "sept": 7,
-            # Chiffres arabes
-            "1": 1,
-            "2": 2,
-            "3": 3,
-            "4": 4,
-            "5": 5,
-            "6": 6,
-            "7": 7,
-            # Variantes phonétiques pour "1"
-            "ain": 1,
-            "eun": 1,
-            "hun": 1,
-            "in": 1,
-            "eune": 1,
-            "eunne": 1,
-            # Variantes pour "2"
-            "deu": 2,
-            "de": 2,
-            # Variantes pour "3"
-            "troi": 3,
-            "troy": 3,
-            # Variantes pour "4"
-            "quatr": 4,
-            "quat": 4,
-            # Variantes pour "5"
-            "saink": 5,
-            "sink": 5,
-            # Variantes pour "6"
-            "si": 6,
-            "sis": 6,
-            # Variantes pour "7"
-            "set": 7,
-            "cet": 7,
-        }
+            # Chiffres en français (mots exacts)
+            words = text.split()
+            number_words = {
+                "un": 1,
+                "une": 1,
+                "deux": 2,
+                "deu": 2,
+                "trois": 3,
+                "troi": 3,
+                "quatre": 4,
+                "quatr": 4,
+                "cinq": 5,
+                "saink": 5,
+                "six": 6,
+                "si": 6,
+                "sept": 7,
+                "set": 7,
+            }
 
-        for word, value in numbers.items():
-            if word in text:
-                if scale == "1-4" and value <= 4:
-                    print(f"OK - Reconnu comme: {value} (mot: '{word}')")
-                    return value
-                elif scale == "1-7" and value <= 7:
-                    print(f"OK - Reconnu comme: {value} (mot: '{word}')")
-                    return value
+            for word in words:
+                if word in number_words:
+                    score = number_words[word]
+                    print(f"OK - Reconnu comme: {score} (mot: '{word}')")
+                    return score
+
+            # Chiffres arabes
+            if text in ["1", "2", "3", "4", "5", "6", "7"]:
+                score = int(text)
+                print(f"OK - Reconnu comme: {score} (chiffre)")
+                return score
 
         print(f"ERREUR - Aucune correspondance trouvee pour: '{text}'")
         return None
