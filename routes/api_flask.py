@@ -247,31 +247,34 @@ def save_manual_response():
 def get_audio(question_num):
     """Servir fichier audio préenregistré pour une question"""
     try:
-        # Chemin vers l'audio préenregistré
-        audio_filename = f"question_{question_num}.wav"
-        # Chercher directement dans static/audio_cache (fichiers copiés)
-        audio_path = Path('static/audio_cache') / audio_filename
+        # Générer le texte de la question pour trouver le bon fichier audio
+        from questionnaire_logic import EORTCQuestionnaire
+        questionnaire = EORTCQuestionnaire()
+        speech_text = questionnaire.get_speech_text(question_num)
         
-        print(f"DEBUG: Recherche audio {audio_filename} dans {audio_path}")
-        print(f"DEBUG: Chemin absolu: {audio_path.absolute()}")
-        print(f"DEBUG: Existe: {audio_path.exists()}")
+        print(f"DEBUG: Question {question_num} - Texte: {speech_text[:50]}...")
         
-        if audio_path.exists():
-            print(f"DEBUG: Audio trouvé, envoi...")
-            return send_file(
-                str(audio_path),
-                mimetype='audio/wav',
-                as_attachment=False
-            )
-        
-        # Vérifier s'il y a d'autres fichiers audio dans le cache
+        # Chercher dans le cache avec les noms de hash
         cache_dir = Path('static/audio_cache')
         if cache_dir.exists():
-            all_audios = list(cache_dir.glob('*.wav'))
-            print(f"DEBUG: Fichiers audio disponibles: {[f.name for f in all_audios]}")
+            # Lister tous les fichiers .wav disponibles
+            wav_files = list(cache_dir.glob('*.wav'))
+            print(f"DEBUG: Fichiers audio disponibles: {len(wav_files)}")
+            
+            if wav_files:
+                # Prendre le premier fichier disponible (ou utiliser un système de mapping)
+                # Pour l'instant, on prend le fichier par index
+                if question_num <= len(wav_files):
+                    audio_file = wav_files[question_num - 1]  # Index 0-based
+                    print(f"DEBUG: Utilisation du fichier: {audio_file.name}")
+                    return send_file(
+                        str(audio_file),
+                        mimetype='audio/wav',
+                        as_attachment=False
+                    )
         
         # Fallback : audio de test simple
-        return jsonify({'error': f'Audio préenregistré non trouvé: {audio_filename}'}), 404
+        return jsonify({'error': f'Audio préenregistré non trouvé pour question {question_num}'}), 404
         
     except Exception as e:
         print(f"DEBUG: Erreur audio: {e}")
@@ -281,16 +284,16 @@ def get_audio(question_num):
 def test_audio():
     """Servir un fichier audio de test pré-généré"""
     try:
-        # Utiliser le fichier audio de test pré-généré (déjà créé)
-        test_audio_path = Path('static/audio_cache/gemini-2.5-pro-preview-tts_Achernar')
+        # Chercher dans le cache avec les noms de hash
+        cache_dir = Path('static/audio_cache')
         
-        print(f"DEBUG: Recherche test audio dans {test_audio_path}")
-        print(f"DEBUG: Existe: {test_audio_path.exists()}")
+        print(f"DEBUG: Recherche test audio dans {cache_dir}")
+        print(f"DEBUG: Existe: {cache_dir.exists()}")
         
         # Chercher le fichier de test dans le cache
-        if test_audio_path.exists():
+        if cache_dir.exists():
             # Lister tous les fichiers .wav dans le cache
-            wav_files = list(test_audio_path.glob('*.wav'))
+            wav_files = list(cache_dir.glob('*.wav'))
             print(f"DEBUG: Fichiers trouvés: {len(wav_files)}")
             if wav_files:
                 # Prendre le premier fichier (généralement le test audio)

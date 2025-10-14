@@ -241,7 +241,73 @@ function testAudio() {
 }
 
 function testMicrophone() {
-    document.getElementById('microphone-test').style.display = 'block';
+    // Simuler le comportement du bouton "Démarrer l'écoute" du questionnaire
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showTestResult('micro-result', false);
+        microTested = true;
+        checkContinueButton();
+        return;
+    }
+    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.lang = 'fr-FR';
+    recognition.continuous = true;  // Mode continu comme le bouton "Démarrer l'écoute"
+    recognition.interimResults = false;
+    
+    recognition.onstart = () => {
+        console.log('Test micro: Reconnaissance vocale continue démarrée (simulation bouton Démarrer l\'écoute)');
+        document.getElementById('microphone-test').style.display = 'block';
+        document.getElementById('recorder-btn').innerHTML = '<i class="fas fa-microphone"></i><span>🔴 Écoute continue active...</span>';
+        document.getElementById('recorder-btn').classList.add('recording');
+    };
+    
+    recognition.onresult = (event) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        console.log('Test micro: Résultat reconnaissance continue:', transcript);
+        showTestResult('micro-result');
+        microTested = true;
+        checkContinueButton();
+        recognition.stop(); // Arrêter après le premier résultat
+        document.getElementById('microphone-test').style.display = 'none';
+    };
+    
+    recognition.onerror = (event) => {
+        console.log('Test micro: Erreur reconnaissance:', event.error);
+        showTestResult('micro-result', false);
+        microTested = true;
+        checkContinueButton();
+        document.getElementById('microphone-test').style.display = 'none';
+    };
+    
+    recognition.onend = () => {
+        console.log('Test micro: Reconnaissance vocale continue terminée');
+        document.getElementById('recorder-btn').innerHTML = '<i class="fas fa-microphone"></i><span>🎤 Tester</span>';
+        document.getElementById('recorder-btn').classList.remove('recording');
+    };
+    
+    try {
+        recognition.start();
+        // Arrêter automatiquement après 5 secondes si pas de résultat
+        setTimeout(() => {
+            if (recognition && recognition.state !== 'ended') {
+                recognition.stop();
+                if (!microTested) {
+                    showTestResult('micro-result', false);
+                    microTested = true;
+                    checkContinueButton();
+                    document.getElementById('microphone-test').style.display = 'none';
+                }
+            }
+        }, 5000);
+    } catch (error) {
+        console.log('Test micro: Erreur démarrage reconnaissance:', error);
+        showTestResult('micro-result', false);
+        microTested = true;
+        checkContinueButton();
+        document.getElementById('microphone-test').style.display = 'none';
+    }
 }
 
 function startRecording() {
