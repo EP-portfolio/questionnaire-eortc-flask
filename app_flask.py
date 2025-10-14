@@ -74,7 +74,7 @@ def main():
     
     # Configuration du port
     port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    debug = os.environ.get('FLASK_ENV') == 'development'
     
     print(f"INFO: Démarrage sur le port {port}")
     print(f"INFO: Mode debug: {debug}")

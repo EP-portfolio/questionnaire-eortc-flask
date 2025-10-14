@@ -10,7 +10,7 @@ Dans le dashboard Render, configurez ces variables :
 
 ```
 SECRET_KEY = 0RE4oaorR674&%23wQqq0E!pPP8QO6N8KaNXeIK7xb3VLiiPMS9JaRZY502yAAaw
-FLASK_DEBUG = False
+FLASK_ENV = production
 AUDIO_ENABLED = True
 USE_GEMINI_TTS = False
 USE_PRO_MODEL = False

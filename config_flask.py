@@ -38,7 +38,7 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     
     # Mode debug
-    DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    DEBUG = os.environ.get('FLASK_ENV') == 'development'
     
     # Configuration production
     @staticmethod

@@ -10,9 +10,9 @@ services:
     startCommand: python app_flask.py
     envVars:
       - key: SECRET_KEY
-        value: questionnaire-eortc-2025-secret-key-production-very-secure
-      - key: FLASK_DEBUG
-        value: False
+        value: 0RE4oaorR674&%23wQqq0E!pPP8QO6N8KaNXeIK7xb3VLiiPMS9JaRZY502yAAaw
+      - key: FLASK_ENV
+        value: production
       - key: AUDIO_ENABLED
         value: True
       - key: USE_GEMINI_TTS
