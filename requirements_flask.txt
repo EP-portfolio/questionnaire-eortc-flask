@@ -1,17 +1,16 @@
-# Dépendances pour l'application Flask EORTC QLQ-C30
-# Version avec reconnaissance vocale continue
+# Dépendances optimisées pour Render avec Python 3.13
+# Version compatible avec le déploiement en ligne
 
 # Framework Flask
 Flask==3.0.0
 Flask-CORS==4.0.0
 
-# Base de données
-SQLAlchemy==2.0.23
-Flask-SQLAlchemy==3.1.1
+# Base de données (SQLite intégré)
+# Pas besoin de SQLAlchemy pour SQLite simple
 
-# Traitement des données
+# Traitement des données (versions compatibles Python 3.13)
 pandas>=2.2.0
-numpy==1.24.3
+numpy>=1.24.0
 
 # Audio et reconnaissance vocale
 requests==2.31.0
@@ -26,10 +25,5 @@ openpyxl==3.1.2
 python-dotenv==1.0.0
 Werkzeug==3.0.1
 
-# Utilitaires
+# Utilitaires essentiels
 pathlib2==2.3.7
-hashlib-compat==1.0.1
-
-# Développement (optionnel)
-# flask-debugtoolbar==0.13.1
-# flask-migrate==4.0.5

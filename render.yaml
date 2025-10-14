@@ -1,13 +1,16 @@
-# Configuration Render pour le déploiement automatique
+# Configuration Render optimisée pour le questionnaire EORTC QLQ-C30
 services:
   - type: web
     name: questionnaire-eortc-flask
     env: python
-    buildCommand: pip install -r requirements_flask.txt
+    pythonVersion: "3.11"  # Version stable compatible
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements_flask.txt
     startCommand: python app_flask.py
     envVars:
       - key: SECRET_KEY
-        value: production-secret-key-change-me
+        value: production-secret-key-change-me-now
       - key: FLASK_DEBUG
         value: False
       - key: AUDIO_ENABLED
