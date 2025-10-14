@@ -23,13 +23,8 @@ class QuestionnaireManager {
             return;
         }
         
-        // Valider la session (avec retry en cas d'échec)
-        const sessionValid = await this.validateSessionWithRetry();
-        if (!sessionValid) {
-            console.error('Session invalide après retry');
-            alert('Erreur : Session invalide');
-            return;
-        }
+        // La session est déjà validée côté serveur, pas besoin de re-valider
+        console.log('Session ID récupéré:', this.sessionId);
         
         // Récupérer le numéro de question depuis l'URL (optionnel)
         const questionParam = new URLSearchParams(window.location.search).get('question');

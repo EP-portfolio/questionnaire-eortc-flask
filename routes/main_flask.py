@@ -26,6 +26,21 @@ def questionnaire():
         flash('Session invalide', 'error')
         return redirect(url_for('main.permission'))
     
+    # Valider que la session existe réellement en base
+    from models.database_flask import DatabaseManager
+    db = DatabaseManager()
+    session_data = db.get_session(session_id)
+    
+    print(f"DEBUG: Validation session {session_id}")
+    print(f"DEBUG: Session trouvée: {session_data is not None}")
+    
+    if not session_data:
+        print(f"DEBUG: Session {session_id} introuvable en base")
+        flash('Session introuvable', 'error')
+        return redirect(url_for('main.permission'))
+    
+    print(f"DEBUG: Session validée: {session_data['initials']}")
+    
     return render_template('questionnaire_flask.html', session_id=session_id)
 
 @main_bp.route('/resultat/<session_id>')
