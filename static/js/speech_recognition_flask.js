@@ -10,6 +10,7 @@ class SpeechRecognitionManager {
         this.isWebSpeechSupported = false;
         this.mediaRecorder = null;
         this.audioChunks = [];
+        this.shouldRestart = false; // Flag pour redémarrage automatique
         
         this.init();
     }
@@ -31,7 +32,7 @@ class SpeechRecognitionManager {
             this.recognition = new SpeechRecognition();
             
             // Configuration
-            this.recognition.continuous = false; // Un résultat à la fois
+            this.recognition.continuous = true; // Écoute continue
             this.recognition.interimResults = false;
             this.recognition.lang = 'fr-FR';
             this.recognition.maxAlternatives = 1;
@@ -60,6 +61,14 @@ class SpeechRecognitionManager {
                 console.log('Reconnaissance vocale terminée');
                 this.isListening = false;
                 this.updateUI('stopped');
+                
+                // Redémarrer automatiquement l'écoute continue si elle était active
+                if (this.shouldRestart) {
+                    console.log('Redémarrage automatique de l\'écoute...');
+                    setTimeout(() => {
+                        this.startContinuousSpeech();
+                    }, 500);
+                }
             };
             
         } catch (error) {
@@ -79,9 +88,13 @@ class SpeechRecognitionManager {
             return;
         }
         
+        // Activer le redémarrage automatique
+        this.shouldRestart = true;
+        
         try {
             this.recognition.start();
             this.updateUI('active');
+            console.log('Écoute continue démarrée');
         } catch (error) {
             console.error('Erreur démarrage reconnaissance:', error);
             alert('Erreur : Impossible de démarrer la reconnaissance vocale');
@@ -89,11 +102,15 @@ class SpeechRecognitionManager {
     }
     
     stopContinuousSpeech() {
+        // Désactiver le redémarrage automatique
+        this.shouldRestart = false;
+        
         if (this.recognition && this.isListening) {
             this.recognition.stop();
         }
         this.isListening = false;
         this.updateUI('stopped');
+        console.log('Écoute continue arrêtée');
     }
     
     handleSpeechResult(transcript, confidence) {
