@@ -127,7 +127,9 @@ class AudioHandlerSimple:
                 data = response.json()
                 import base64
 
-                pcm_b64 = data["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
+                pcm_b64 = data["candidates"][0]["content"]["parts"][0]["inlineData"][
+                    "data"
+                ]
                 pcm_data = base64.b64decode(pcm_b64)
                 wav_data = self._pcm_to_wav(pcm_data)
                 return wav_data
@@ -291,100 +293,181 @@ class VoiceRecognitionHandler:
             return None
 
         text = text.lower().strip()
-        print(f"🔍 DEBUG - Texte reconnu: '{text}' (échelle: {scale})")
-        print(f"🔍 DEBUG - Longueur du texte: {len(text)} caractères")
-        print(f"🔍 DEBUG - Mots détectés: {text.split()}")
+        print(f"DEBUG - Texte reconnu: '{text}' (echelle: {scale})")
+        print(f"DEBUG - Longueur du texte: {len(text)} caracteres")
+        print(f"DEBUG - Mots detectes: {text.split()}")
 
         # Rejeter explicitement les mots non-valides
         invalid_words = [
-            "passer", "passé", "pass", "suivant", "suivante", "next", "skip", "ignorer"
+            "passer",
+            "passé",
+            "pass",
+            "suivant",
+            "suivante",
+            "next",
+            "skip",
+            "ignorer",
         ]
         if any(word in text for word in invalid_words):
-            print("❌ Mot non-valide détecté, rejeté")
+            print("ERREUR - Mot non-valide detecte, rejete")
             return None
 
         if scale == "1-4":
             # Vérifier d'abord les expressions complètes (plus spécifiques)
             if any(phrase in text for phrase in ["pas du tout", "jamais", "aucun"]):
-                print("✅ Reconnu comme: 1 (pas du tout)")
+                print("OK - Reconnu comme: 1 (pas du tout)")
                 return 1
-            elif any(phrase in text for phrase in ["beaucoup", "très", "tout à fait", "complètement", "énormément"]):
-                print("✅ Reconnu comme: 4 (beaucoup)")
+            elif any(
+                phrase in text
+                for phrase in [
+                    "beaucoup",
+                    "tres",
+                    "tout a fait",
+                    "completement",
+                    "enormement",
+                ]
+            ):
+                print("OK - Reconnu comme: 4 (beaucoup)")
                 return 4
-            elif any(phrase in text for phrase in ["assez", "moyennement", "modérément"]):
-                print("✅ Reconnu comme: 3 (assez)")
+            elif any(
+                phrase in text for phrase in ["assez", "moyennement", "moderement"]
+            ):
+                print("OK - Reconnu comme: 3 (assez)")
                 return 3
-            elif any(phrase in text for phrase in ["un peu", "légèrement"]):
-                print("✅ Reconnu comme: 2 (un peu)")
+            elif any(phrase in text for phrase in ["un peu", "legerement"]):
+                print("OK - Reconnu comme: 2 (un peu)")
                 return 2
-            
+
             # Vérifier ensuite les mots individuels (moins spécifiques)
-            elif any(word in text for word in ["beaucoup", "boucoup", "bocou", "boku", "bocoup", "beaukou", "beaucou", "bokoup", "bocou", "boku", "bocoup", "beaukou", "beaucou", "bokoup"]):
-                print("✅ Reconnu comme: 4 (beaucoup)")
+            elif any(
+                word in text
+                for word in [
+                    "beaucoup",
+                    "boucoup",
+                    "bocou",
+                    "boku",
+                    "bocoup",
+                    "beaukou",
+                    "beaucou",
+                    "bokoup",
+                    "bocou",
+                    "boku",
+                    "bocoup",
+                    "beaukou",
+                    "beaucou",
+                    "bokoup",
+                ]
+            ):
+                print("OK - Reconnu comme: 4 (beaucoup)")
                 return 4
-            elif any(word in text for word in ["assez", "aise", "aisez", "aisee", "aisees", "ase", "asez", "asé", "asée", "acer", "acez", "asser", "assey"]):
-                print("✅ Reconnu comme: 3 (assez)")
+            elif any(
+                word in text
+                for word in [
+                    "assez",
+                    "aise",
+                    "aisez",
+                    "aisee",
+                    "aisees",
+                    "ase",
+                    "asez",
+                    "ase",
+                    "asee",
+                    "acer",
+                    "acez",
+                    "asser",
+                    "assey",
+                ]
+            ):
+                print("OK - Reconnu comme: 3 (assez)")
                 return 3
             elif any(word in text for word in ["peu"]):
-                print("✅ Reconnu comme: 2 (un peu)")
+                print("OK - Reconnu comme: 2 (un peu)")
                 return 2
             elif any(word in text for word in ["pas"]):
-                print("✅ Reconnu comme: 1 (pas du tout)")
+                print("OK - Reconnu comme: 1 (pas du tout)")
                 return 1
 
         elif scale == "1-7":
-            if any(word in text for word in ["très mauvais", "horrible", "terrible"]):
-                print("✅ Reconnu comme: 1 (très mauvais)")
+            if any(word in text for word in ["tres mauvais", "horrible", "terrible"]):
+                print("OK - Reconnu comme: 1 (tres mauvais)")
                 return 1
             elif any(word in text for word in ["mauvais", "mal"]):
-                print("✅ Reconnu comme: 2 (mauvais)")
+                print("OK - Reconnu comme: 2 (mauvais)")
                 return 2
-            elif any(word in text for word in ["plutôt mauvais", "pas bien"]):
-                print("✅ Reconnu comme: 3 (plutôt mauvais)")
+            elif any(word in text for word in ["plutot mauvais", "pas bien"]):
+                print("OK - Reconnu comme: 3 (plutot mauvais)")
                 return 3
             elif any(word in text for word in ["moyen", "neutre", "correct"]):
-                print("✅ Reconnu comme: 4 (moyen)")
+                print("OK - Reconnu comme: 4 (moyen)")
                 return 4
-            elif any(word in text for word in ["plutôt bon", "plutôt bien", "assez bien"]):
-                print("✅ Reconnu comme: 5 (plutôt bon)")
+            elif any(
+                word in text for word in ["plutot bon", "plutot bien", "assez bien"]
+            ):
+                print("OK - Reconnu comme: 5 (plutot bon)")
                 return 5
             elif any(word in text for word in ["bon", "bien"]):
-                print("✅ Reconnu comme: 6 (bon)")
+                print("OK - Reconnu comme: 6 (bon)")
                 return 6
-            elif any(word in text for word in ["très bon", "excellent", "parfait", "super"]):
-                print("✅ Reconnu comme: 7 (excellent)")
+            elif any(
+                word in text for word in ["tres bon", "excellent", "parfait", "super"]
+            ):
+                print("OK - Reconnu comme: 7 (excellent)")
                 return 7
 
         # Dictionnaire étendu avec variantes phonétiques
         numbers = {
             # Chiffres en français
-            "un": 1, "une": 1, "deux": 2, "trois": 3, "quatre": 4, "cinq": 5, "six": 6, "sept": 7,
+            "un": 1,
+            "une": 1,
+            "deux": 2,
+            "trois": 3,
+            "quatre": 4,
+            "cinq": 5,
+            "six": 6,
+            "sept": 7,
             # Chiffres arabes
-            "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7,
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+            "5": 5,
+            "6": 6,
+            "7": 7,
             # Variantes phonétiques pour "1"
-            "ain": 1, "eun": 1, "hun": 1, "in": 1, "eune": 1, "eunne": 1,
+            "ain": 1,
+            "eun": 1,
+            "hun": 1,
+            "in": 1,
+            "eune": 1,
+            "eunne": 1,
             # Variantes pour "2"
-            "deu": 2, "de": 2,
+            "deu": 2,
+            "de": 2,
             # Variantes pour "3"
-            "troi": 3, "troy": 3,
+            "troi": 3,
+            "troy": 3,
             # Variantes pour "4"
-            "quatr": 4, "quat": 4,
+            "quatr": 4,
+            "quat": 4,
             # Variantes pour "5"
-            "saink": 5, "sink": 5,
+            "saink": 5,
+            "sink": 5,
             # Variantes pour "6"
-            "si": 6, "sis": 6,
+            "si": 6,
+            "sis": 6,
             # Variantes pour "7"
-            "set": 7, "cet": 7,
+            "set": 7,
+            "cet": 7,
         }
 
         for word, value in numbers.items():
             if word in text:
                 if scale == "1-4" and value <= 4:
-                    print(f"✅ Reconnu comme: {value} (mot: '{word}')")
+                    print(f"OK - Reconnu comme: {value} (mot: '{word}')")
                     return value
                 elif scale == "1-7" and value <= 7:
-                    print(f"✅ Reconnu comme: {value} (mot: '{word}')")
+                    print(f"OK - Reconnu comme: {value} (mot: '{word}')")
                     return value
 
-        print(f"❌ Aucune correspondance trouvée pour: '{text}'")
+        print(f"ERREUR - Aucune correspondance trouvee pour: '{text}'")
         return None

@@ -45,10 +45,11 @@ class SpeechRecognitionManager {
             };
             
             this.recognition.onresult = (event) => {
+                console.log('DEBUG: onresult déclenché', event);
                 const transcript = event.results[0][0].transcript;
                 const confidence = event.results[0][0].confidence;
                 
-                console.log('Résultat:', transcript, 'Confiance:', confidence);
+                console.log('DEBUG: Résultat:', transcript, 'Confiance:', confidence);
                 this.handleSpeechResult(transcript, confidence);
             };
             
@@ -114,6 +115,7 @@ class SpeechRecognitionManager {
     }
     
     handleSpeechResult(transcript, confidence) {
+        console.log('DEBUG: handleSpeechResult appelé avec:', transcript);
         // Afficher le transcript
         this.updateTranscript(transcript);
         
@@ -156,9 +158,11 @@ class SpeechRecognitionManager {
     }
     
     async processVoiceResponse(transcript) {
+        console.log('DEBUG: processVoiceResponse appelé avec:', transcript);
         try {
             // Vérifier que le transcript n'est pas vide
             if (!transcript || transcript.trim() === '') {
+                console.log('DEBUG: Transcript vide, arrêt');
                 this.showError('Aucune parole détectée. Veuillez parler plus fort.');
                 return;
             }
