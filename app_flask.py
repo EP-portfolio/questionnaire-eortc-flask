@@ -19,11 +19,14 @@ from questionnaire_logic import EORTCQuestionnaire
 from audio_handler_simple_flask import AudioHandlerSimple as AudioHandler, VoiceRecognitionHandler
 
 # Importer les routes
-from routes.main import main_bp
-from routes.api import api_bp
+from routes.main_flask import main_bp
+from routes.api_flask import api_bp
 
 # Importer la configuration
-from config import Config
+from config_flask import Config
+
+# Importer la base de données
+from models.database_flask import DatabaseManager
 
 def create_app():
     """Factory pour créer l'application Flask"""
@@ -37,6 +40,7 @@ def create_app():
     
     # Initialiser les gestionnaires
     app.questionnaire = EORTCQuestionnaire()
+    app.db = DatabaseManager()
     
     # Récupérer la clé API
     api_key = os.environ.get('GOOGLE_CLOUD_API_KEY')

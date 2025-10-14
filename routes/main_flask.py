@@ -11,12 +11,12 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 def permission():
     """Page de permissions avec tests navigateur"""
-    return render_template('permission.html')
+    return render_template('permission_flask.html')
 
 @main_bp.route('/accueil')
 def accueil():
     """Page d'accueil avec informations personnelles"""
-    return render_template('accueil.html')
+    return render_template('accueil_flask.html')
 
 @main_bp.route('/questionnaire')
 def questionnaire():
@@ -26,12 +26,12 @@ def questionnaire():
         flash('Session invalide', 'error')
         return redirect(url_for('main.permission'))
     
-    return render_template('questionnaire.html', session_id=session_id)
+    return render_template('questionnaire_flask.html', session_id=session_id)
 
 @main_bp.route('/resultat/<session_id>')
 def resultat(session_id):
     """Page des résultats avec statistiques et export"""
-    return render_template('resultat.html', session_id=session_id)
+    return render_template('resultat_flask.html', session_id=session_id)
 
 @main_bp.route('/admin')
 def admin():
