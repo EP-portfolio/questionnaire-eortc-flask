@@ -1,6 +1,6 @@
 """
 Gestionnaire audio simplifié pour le web (sans pygame ni speech_recognition)
-Version optimisée avec reconnaissance vocale STRICTE
+Version optimisée avec reconnaissance vocale TRÈS améliorée
 """
 
 import requests
@@ -17,7 +17,7 @@ import re
 
 
 class AudioHandlerSimple:
-    """Gestionnaire audio simplifié pour le web (sans pygame ni speech_recognition)"""
+    """Gestionnaire audio simplifié pour le web"""
 
     def __init__(
         self,
@@ -25,18 +25,12 @@ class AudioHandlerSimple:
         use_gemini_tts: bool = False,
         use_pro_model: bool = True,
     ):
-        """
-        Initialise le gestionnaire audio pour le web
-        """
-        # Clé API
         self.api_key = api_key or os.environ.get("GOOGLE_CLOUD_API_KEY")
         if not self.api_key:
             print("ATTENTION: Cle API Google Cloud non configuree!")
-            print("Definissez GOOGLE_CLOUD_API_KEY dans vos variables d'environnement")
 
         self.use_gemini_tts = use_gemini_tts
 
-        # Configuration selon l'API choisie
         if use_gemini_tts:
             if use_pro_model:
                 self.model = "gemini-2.5-pro-preview-tts"
@@ -53,18 +47,15 @@ class AudioHandlerSimple:
             self.language_code = "fr-FR"
             print("Utilisation de Cloud Text-to-Speech (voix Neural2)")
 
-        # État
         self.is_speaking = False
         self.current_thread = None
         self.stop_flag = threading.Event()
         self._lock = threading.Lock()
 
-        # CACHE PERMANENT dans le dossier du projet
         cache_type = (
             f"{self.model if use_gemini_tts else 'cloud_tts'}_{self.voice_name}"
         )
 
-        # Dossier de cache permanent
         project_dir = Path(__file__).parent
         self.cache_dir = project_dir / "static" / "audio_cache" / cache_type
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -76,20 +67,6 @@ class AudioHandlerSimple:
         cache_key = f"{self.voice_name}_{text}"
         text_hash = hashlib.md5(cache_key.encode("utf-8")).hexdigest()
         return self.cache_dir / f"{text_hash}.wav"
-
-    def _pcm_to_wav(self, pcm_data: bytes, sample_rate: int = 24000) -> bytes:
-        """Convertit des données PCM brutes en WAV"""
-        import io
-
-        wav_buffer = io.BytesIO()
-
-        with wave.open(wav_buffer, "wb") as wav_file:
-            wav_file.setnchannels(1)  # Mono
-            wav_file.setsampwidth(2)  # 16-bit
-            wav_file.setframerate(sample_rate)
-            wav_file.writeframes(pcm_data)
-
-        return wav_buffer.getvalue()
 
     def get_audio_path(self, text: str) -> Optional[Path]:
         """Retourne le chemin du fichier audio (pour lecture web)"""
@@ -119,40 +96,44 @@ class AudioHandlerSimple:
 
 
 class VoiceRecognitionHandler:
-    """Gestionnaire de reconnaissance vocale simplifié (Web Speech API uniquement)"""
+    """Gestionnaire de reconnaissance vocale TRÈS amélioré"""
 
     def __init__(self):
         self.recognition_enabled = False
         print("INFO Reconnaissance vocale configurée pour Web Speech API uniquement")
-        print("INFO Utilisation de JavaScript Web Speech API (client-side)")
 
     def _normalize_text(self, text: str) -> str:
         """Normalise le texte pour la comparaison"""
-        # Supprimer ponctuation, mettre en minuscule, supprimer espaces multiples
         text = text.lower().strip()
-        text = re.sub(r"[^\w\s]", " ", text)  # Remplacer ponctuation par espace
-        text = re.sub(r"\s+", " ", text)  # Supprimer espaces multiples
+        # Supprimer accents
+        text = text.replace("é", "e").replace("è", "e").replace("ê", "e")
+        text = text.replace("à", "a").replace("â", "a")
+        text = text.replace("ù", "u").replace("û", "u")
+        text = text.replace("ô", "o")
+        text = text.replace("ç", "c")
+        # Supprimer ponctuation
+        text = re.sub(r"[^\w\s]", " ", text)
+        # Supprimer espaces multiples
+        text = re.sub(r"\s+", " ", text).strip()
         return text
 
-    def _is_exact_word_match(self, text: str, keywords: list) -> bool:
+    def _contains_word(self, text: str, keywords: list) -> bool:
         """
-        Vérifie si UN mot exact de la liste est présent (pas juste une sous-chaîne)
+        Vérifie si un mot de la liste est présent (mot entier ou expression)
         """
         text_normalized = self._normalize_text(text)
-        words = text_normalized.split()
 
         for keyword in keywords:
             keyword_normalized = self._normalize_text(keyword)
-            # Vérifier mot exact
-            if keyword_normalized in words:
+
+            # Vérifier si le mot/expression est présent avec délimiteurs
+            pattern = r"\b" + re.escape(keyword_normalized) + r"\b"
+            if re.search(pattern, text_normalized):
                 return True
-            # OU vérifier expression exacte (pour "pas du tout", "un peu", etc.)
-            if keyword_normalized in text_normalized:
-                # S'assurer que c'est bien l'expression complète
-                # avec des délimiteurs (début, fin, ou espaces)
-                pattern = r"\b" + re.escape(keyword_normalized) + r"\b"
-                if re.search(pattern, text_normalized):
-                    return True
+
+            # Aussi vérifier sans délimiteurs pour les expressions multi-mots
+            if " " in keyword_normalized and keyword_normalized in text_normalized:
+                return True
 
         return False
 
@@ -161,146 +142,215 @@ class VoiceRecognitionHandler:
         if not text:
             return None
 
-        text = text.lower().strip()
-        print(f"DEBUG - Texte reconnu: '{text}' (echelle: {scale})")
-        print(f"DEBUG - Longueur du texte: {len(text)} caracteres")
+        text_original = text
+        text = self._normalize_text(text)
 
-        # ✅ CORRECTION : Rejeter les phrases trop longues (> 30 caractères)
-        if len(text) > 30:
-            print("ERREUR - Phrase trop longue, probablement pas une réponse valide")
+        print(f"DEBUG - Texte original: '{text_original}'")
+        print(f"DEBUG - Texte normalisé: '{text}' (echelle: {scale})")
+        print(f"DEBUG - Longueur: {len(text)} caracteres")
+
+        # Rejeter les phrases trop longues (> 40 caractères)
+        if len(text) > 40:
+            print("ERREUR - Phrase trop longue, probablement pas une reponse valide")
             return None
 
-        # Rejeter explicitement les mots non-valides
+        # Rejeter les mots non-valides
         invalid_words = [
             "passer",
-            "passé",
+            "passe",
             "pass",
             "suivant",
             "suivante",
             "next",
             "skip",
             "ignorer",
-            "je",
-            "pense",
-            "que",
+            "attendre",
+            "attends",
         ]
         if any(word in text.split() for word in invalid_words):
-            print("ERREUR - Mot non-valide detecte, rejete")
+            print("ERREUR - Mot non-valide detecte")
             return None
 
         if scale == "1-4":
-            # ✅ Ordre de priorité : expressions complètes PUIS mots individuels
+            # ORDRE DE PRIORITÉ (du plus spécifique au plus général)
 
-            # 1. Expressions multi-mots (priorité maximale)
-            if self._is_exact_word_match(text, ["pas du tout", "jamais"]):
-                print("OK - Reconnu comme: 1 (pas du tout)")
-                return 1
-
-            if self._is_exact_word_match(text, ["un peu", "legerement"]):
-                print("OK - Reconnu comme: 2 (un peu)")
-                return 2
-
-            if self._is_exact_word_match(text, ["assez", "moyennement", "moderement"]):
-                print("OK - Reconnu comme: 3 (assez)")
-                return 3
-
-            if self._is_exact_word_match(
-                text, ["beaucoup", "tres", "enormement", "completement", "tout a fait"]
+            # 1. Expressions multi-mots (PRIORITÉ MAXIMALE)
+            if self._contains_word(
+                text, ["pas du tout", "jamais", "aucunement", "nullement"]
             ):
-                print("OK - Reconnu comme: 4 (beaucoup)")
-                return 4
-
-            # 2. Chiffres en français (mots exacts seulement)
-            words = text.split()
-
-            if "un" in words or "une" in words:
-                print("OK - Reconnu comme: 1 (chiffre 'un')")
+                print("OK - Reconnu: 1 (pas du tout)")
                 return 1
 
-            if "deux" in words:
-                print("OK - Reconnu comme: 2 (chiffre 'deux')")
+            if self._contains_word(text, ["un peu", "legerement", "peu"]):
+                print("OK - Reconnu: 2 (un peu)")
                 return 2
 
-            if "trois" in words or "troi" in words:
-                print("OK - Reconnu comme: 3 (chiffre 'trois')")
+            if self._contains_word(
+                text, ["assez", "moyennement", "moderement", "plutot"]
+            ):
+                print("OK - Reconnu: 3 (assez)")
                 return 3
 
-            if "quatre" in words or "quatr" in words:
-                print("OK - Reconnu comme: 4 (chiffre 'quatre')")
+            # 2. "Beaucoup" et variantes (CRITIQUE - amélioration majeure)
+            beaucoup_variants = [
+                "beaucoup",
+                "boucoup",
+                "bocoup",
+                "boku",
+                "bocou",
+                "beaucou",
+                "beaukou",
+                "bokoup",
+                "bokou",
+                "beacoup",
+                "bocou",
+                "bocoups",
+                "tres",
+                "enormement",
+                "completement",
+                "tout a fait",
+                "vraiment",
+            ]
+            if self._contains_word(text, beaucoup_variants):
+                print("OK - Reconnu: 4 (beaucoup)")
                 return 4
 
-            # 3. Chiffres arabes (si présents seuls)
+            # 3. Chiffres en français (AMÉLIORATION - plus de variantes)
+            chiffres_francais = {
+                # Chiffre 1
+                "un": 1,
+                "une": 1,
+                "ain": 1,
+                "eun": 1,
+                "hun": 1,
+                "in": 1,
+                # Chiffre 2
+                "deux": 2,
+                "deu": 2,
+                "de": 2,
+                "d": 2,
+                # Chiffre 3
+                "trois": 3,
+                "troi": 3,
+                "troy": 3,
+                "troa": 3,
+                # Chiffre 4
+                "quatre": 4,
+                "quatr": 4,
+                "quat": 4,
+                "katre": 4,
+                "cat": 4,
+            }
+
+            words = text.split()
+            for word in words:
+                if word in chiffres_francais:
+                    score = chiffres_francais[word]
+                    if score <= 4:
+                        print(f"OK - Reconnu: {score} (chiffre francais '{word}')")
+                        return score
+
+            # 4. Chiffres arabes
             if text in ["1", "2", "3", "4"]:
                 score = int(text)
-                print(f"OK - Reconnu comme: {score} (chiffre)")
+                print(f"OK - Reconnu: {score} (chiffre arabe)")
+                return score
+
+            # 5. Recherche de chiffres dans le texte
+            digit_match = re.search(r"\b([1-4])\b", text)
+            if digit_match:
+                score = int(digit_match.group(1))
+                print(f"OK - Reconnu: {score} (chiffre trouve dans le texte)")
                 return score
 
         elif scale == "1-7":
-            # Expressions qualitatives
-            if self._is_exact_word_match(
-                text, ["tres mauvais", "horrible", "terrible"]
+            # ORDRE DE PRIORITÉ pour échelle 1-7
+
+            # 1. Expressions qualitatives
+            if self._contains_word(
+                text, ["tres mauvais", "horrible", "terrible", "nul"]
             ):
-                print("OK - Reconnu comme: 1 (tres mauvais)")
+                print("OK - Reconnu: 1 (tres mauvais)")
                 return 1
 
-            if self._is_exact_word_match(text, ["mauvais", "mal"]):
-                print("OK - Reconnu comme: 2 (mauvais)")
+            if self._contains_word(text, ["mauvais", "mal", "pas bon"]):
+                print("OK - Reconnu: 2 (mauvais)")
                 return 2
 
-            if self._is_exact_word_match(text, ["plutot mauvais", "pas bien"]):
-                print("OK - Reconnu comme: 3 (plutot mauvais)")
+            if self._contains_word(
+                text, ["plutot mauvais", "pas bien", "pas terrible"]
+            ):
+                print("OK - Reconnu: 3 (plutot mauvais)")
                 return 3
 
-            if self._is_exact_word_match(text, ["moyen", "neutre", "correct"]):
-                print("OK - Reconnu comme: 4 (moyen)")
+            if self._contains_word(text, ["moyen", "neutre", "correct", "ca va"]):
+                print("OK - Reconnu: 4 (moyen)")
                 return 4
 
-            if self._is_exact_word_match(
-                text, ["plutot bon", "plutot bien", "assez bien"]
-            ):
-                print("OK - Reconnu comme: 5 (plutot bon)")
+            if self._contains_word(text, ["plutot bon", "plutot bien", "assez bien"]):
+                print("OK - Reconnu: 5 (plutot bon)")
                 return 5
 
-            if self._is_exact_word_match(text, ["bon", "bien"]):
-                print("OK - Reconnu comme: 6 (bon)")
+            if self._contains_word(text, ["bon", "bien"]):
+                print("OK - Reconnu: 6 (bon)")
                 return 6
 
-            if self._is_exact_word_match(
-                text, ["tres bon", "excellent", "parfait", "super"]
+            if self._contains_word(
+                text, ["tres bon", "excellent", "parfait", "super", "genial"]
             ):
-                print("OK - Reconnu comme: 7 (excellent)")
+                print("OK - Reconnu: 7 (excellent)")
                 return 7
 
-            # Chiffres en français (mots exacts)
-            words = text.split()
-            number_words = {
+            # 2. Chiffres en français (1-7)
+            chiffres_francais_1_7 = {
                 "un": 1,
                 "une": 1,
+                "ain": 1,
+                "eun": 1,
                 "deux": 2,
                 "deu": 2,
+                "de": 2,
                 "trois": 3,
                 "troi": 3,
+                "troy": 3,
                 "quatre": 4,
                 "quatr": 4,
+                "quat": 4,
                 "cinq": 5,
                 "saink": 5,
+                "sink": 5,
+                "sain": 5,
                 "six": 6,
                 "si": 6,
+                "sis": 6,
+                "cis": 6,
                 "sept": 7,
                 "set": 7,
+                "cet": 7,
+                "sete": 7,
             }
 
+            words = text.split()
             for word in words:
-                if word in number_words:
-                    score = number_words[word]
-                    print(f"OK - Reconnu comme: {score} (mot: '{word}')")
-                    return score
+                if word in chiffres_francais_1_7:
+                    score = chiffres_francais_1_7[word]
+                    if score <= 7:
+                        print(f"OK - Reconnu: {score} (chiffre francais '{word}')")
+                        return score
 
-            # Chiffres arabes
+            # 3. Chiffres arabes
             if text in ["1", "2", "3", "4", "5", "6", "7"]:
                 score = int(text)
-                print(f"OK - Reconnu comme: {score} (chiffre)")
+                print(f"OK - Reconnu: {score} (chiffre arabe)")
+                return score
+
+            # 4. Recherche de chiffres dans le texte
+            digit_match = re.search(r"\b([1-7])\b", text)
+            if digit_match:
+                score = int(digit_match.group(1))
+                print(f"OK - Reconnu: {score} (chiffre trouve dans le texte)")
                 return score
 
         print(f"ERREUR - Aucune correspondance trouvee pour: '{text}'")
+        print(f"DEBUG - Mots detectes: {text.split()}")
         return None
