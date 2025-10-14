@@ -103,8 +103,10 @@ dmypy.json
 data/responses.db
 data/responses.db-journal
 
-# Cache audio
+# Cache audio (sauf les fichiers question_*.wav)
 static/audio_cache/*.wav
+!static/audio_cache/question_*.wav
+!static/audio_cache/test_audio.wav
 
 # Logs
 logs/
