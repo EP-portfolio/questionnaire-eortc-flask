@@ -249,20 +249,32 @@ def get_audio(question_num):
     try:
         # Chemin vers l'audio préenregistré
         audio_filename = f"question_{question_num}.wav"
-        audio_path = Path('static/audio_cache') / audio_filename
+        # Chercher dans le sous-dossier Gemini TTS
+        audio_path = Path('static/audio_cache/gemini-2.5-pro-preview-tts_Achernar') / audio_filename
+        
+        print(f"DEBUG: Recherche audio {audio_filename} dans {audio_path}")
+        print(f"DEBUG: Chemin absolu: {audio_path.absolute()}")
+        print(f"DEBUG: Existe: {audio_path.exists()}")
         
         if audio_path.exists():
-            from flask import send_file
+            print(f"DEBUG: Audio trouvé, envoi...")
             return send_file(
                 str(audio_path),
                 mimetype='audio/wav',
                 as_attachment=False
             )
         
+        # Vérifier s'il y a d'autres fichiers audio dans le cache
+        cache_dir = Path('static/audio_cache')
+        if cache_dir.exists():
+            all_audios = list(cache_dir.glob('*.wav'))
+            print(f"DEBUG: Fichiers audio disponibles: {[f.name for f in all_audios]}")
+        
         # Fallback : audio de test simple
         return jsonify({'error': f'Audio préenregistré non trouvé: {audio_filename}'}), 404
         
     except Exception as e:
+        print(f"DEBUG: Erreur audio: {e}")
         return jsonify({'error': f'Erreur audio: {str(e)}'}), 500
 
 @api_bp.route('/test_audio')
@@ -272,12 +284,17 @@ def test_audio():
         # Utiliser le fichier audio de test pré-généré (déjà créé)
         test_audio_path = Path('static/audio_cache/gemini-2.5-pro-preview-tts_Achernar')
         
+        print(f"DEBUG: Recherche test audio dans {test_audio_path}")
+        print(f"DEBUG: Existe: {test_audio_path.exists()}")
+        
         # Chercher le fichier de test dans le cache
         if test_audio_path.exists():
             # Lister tous les fichiers .wav dans le cache
             wav_files = list(test_audio_path.glob('*.wav'))
+            print(f"DEBUG: Fichiers trouvés: {len(wav_files)}")
             if wav_files:
                 # Prendre le premier fichier (généralement le test audio)
+                print(f"DEBUG: Utilisation du fichier: {wav_files[0]}")
                 return send_file(
                     str(wav_files[0]),
                     mimetype='audio/wav',
@@ -395,7 +412,7 @@ def diagnostic():
     env_vars = {
         'SECRET_KEY': '✅' if os.environ.get('SECRET_KEY') else '❌',
         'GOOGLE_CLOUD_API_KEY': '✅' if os.environ.get('GOOGLE_CLOUD_API_KEY') else '❌',
-        'FLASK_DEBUG': os.environ.get('FLASK_DEBUG', 'NON DÉFINIE'),
+        'FLASK_ENV': os.environ.get('FLASK_ENV', 'NON DÉFINIE'),
         'AUDIO_ENABLED': os.environ.get('AUDIO_ENABLED', 'NON DÉFINIE'),
     }
     

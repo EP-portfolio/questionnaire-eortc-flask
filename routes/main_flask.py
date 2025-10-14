@@ -23,8 +23,9 @@ def questionnaire():
     """Page du questionnaire avec reconnaissance vocale continue"""
     session_id = request.args.get('session_id')
     if not session_id:
+        print("DEBUG: Session ID manquant dans l'URL")
         flash('Session invalide', 'error')
-        return redirect(url_for('main.permission'))
+        return redirect(url_for('main.accueil'))
     
     # Valider que la session existe réellement en base
     from models.database_flask import DatabaseManager
@@ -36,10 +37,28 @@ def questionnaire():
     
     if not session_data:
         print(f"DEBUG: Session {session_id} introuvable en base")
-        flash('Session introuvable', 'error')
-        return redirect(url_for('main.permission'))
+        print(f"DEBUG: Tentative de création d'une session de test...")
+        
+        # Créer une session de test si elle n'existe pas
+        try:
+            test_session_id = db.create_session({
+                'initials': 'TEST',
+                'birth_date': '01/01/1990',
+                'today_date': '01/01/2025',
+                'mode': 'Test',
+                'audio_enabled': True
+            })
+            print(f"DEBUG: Session de test créée: {test_session_id}")
+            
+            # Rediriger vers la nouvelle session
+            return redirect(url_for('main.questionnaire', session_id=test_session_id))
+            
+        except Exception as e:
+            print(f"DEBUG: Erreur création session test: {e}")
+            flash('Session introuvable', 'error')
+            return redirect(url_for('main.accueil'))
     
-    print(f"DEBUG: Session validée: {session_data['initials']}")
+    print(f"DEBUG: Session validée: {session_data.get('initials', 'N/A')}")
     
     return render_template('questionnaire_flask_simple.html', session_id=session_id)
 
