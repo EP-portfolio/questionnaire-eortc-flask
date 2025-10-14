@@ -140,6 +140,12 @@ class SpeechRecognitionManager {
     
     async processVoiceResponse(transcript) {
         try {
+            // Vérifier que le transcript n'est pas vide
+            if (!transcript || transcript.trim() === '') {
+                this.showError('Aucune parole détectée. Veuillez parler plus fort.');
+                return;
+            }
+            
             const response = await fetch('/api/process_voice', {
                 method: 'POST',
                 headers: {

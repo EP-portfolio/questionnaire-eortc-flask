@@ -43,6 +43,29 @@ def start_session():
     except Exception as e:
         return jsonify({'error': f'Erreur création session: {str(e)}'}), 500
 
+@api_bp.route('/validate_session/<session_id>', methods=['GET'])
+def validate_session(session_id):
+    """Valider qu'une session existe"""
+    try:
+        from models.database_flask import DatabaseManager
+        db = DatabaseManager()
+        session = db.get_session(session_id)
+        
+        if not session:
+            return jsonify({'valid': False, 'error': 'Session invalide'}), 400
+        
+        return jsonify({
+            'valid': True,
+            'session': {
+                'id': session['id'],
+                'initials': session['initials'],
+                'created_at': session['created_at']
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Erreur validation session: {str(e)}'}), 500
+
 @api_bp.route('/get_question/<int:question_num>', methods=['GET'])
 def get_question(question_num):
     """Récupérer une question"""
@@ -82,6 +105,21 @@ def process_voice():
         session_id = data['session_id']
         question_num = int(data['question_num'])
         transcript = data['transcript']
+        
+        # Vérifier que le transcript n'est pas vide
+        if not transcript or transcript.strip() == "":
+            return jsonify({
+                'valid': False,
+                'error': 'Aucune parole détectée',
+                'message': 'Veuillez parler plus fort ou plus clairement'
+            })
+        
+        # Vérifier que la session existe
+        from models.database_flask import DatabaseManager
+        db = DatabaseManager()
+        session = db.get_session(session_id)
+        if not session:
+            return jsonify({'error': 'Session invalide'}), 400
         
         # Récupérer la question
         question = current_app.questionnaire.get_question(question_num)

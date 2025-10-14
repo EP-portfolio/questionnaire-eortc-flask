@@ -13,12 +13,20 @@ class QuestionnaireManager {
         this.init();
     }
     
-    init() {
+    async init() {
         // Récupérer l'ID de session depuis l'URL
         this.sessionId = new URLSearchParams(window.location.search).get('session_id');
         
         if (!this.sessionId) {
             console.error('Session ID manquant');
+            alert('Erreur : Session invalide');
+            return;
+        }
+        
+        // Valider la session
+        const sessionValid = await this.validateSession();
+        if (!sessionValid) {
+            console.error('Session invalide');
             alert('Erreur : Session invalide');
             return;
         }
@@ -36,6 +44,24 @@ class QuestionnaireManager {
         
         // Charger la question actuelle
         this.loadQuestion(this.currentQuestion);
+    }
+    
+    async validateSession() {
+        try {
+            const response = await fetch(`/api/validate_session/${this.sessionId}`);
+            const data = await response.json();
+            
+            if (data.valid) {
+                console.log('Session validée:', data.session);
+                return true;
+            } else {
+                console.error('Session invalide:', data.error);
+                return false;
+            }
+        } catch (error) {
+            console.error('Erreur validation session:', error);
+            return false;
+        }
     }
     
     async loadQuestion(questionNum) {
