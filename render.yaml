@@ -3,7 +3,7 @@ services:
   - type: web
     name: questionnaire-eortc-flask
     env: python
-    pythonVersion: "3.11.9"  # Version stable compatible
+    pythonVersion: "3.11.9"
     buildCommand: |
       pip install --upgrade pip
       pip install -r requirements_flask.txt
@@ -16,10 +16,10 @@ services:
       - key: AUDIO_ENABLED
         value: True
       - key: USE_GEMINI_TTS
-        value: True
+        value: False
       - key: USE_PRO_MODEL
-        value: True
+        value: False
       - key: GOOGLE_CLOUD_API_KEY
-        value: ""  # Pas nécessaire pour audios préenregistrés
+        value: ""
     healthCheckPath: /api/health
     autoDeploy: true

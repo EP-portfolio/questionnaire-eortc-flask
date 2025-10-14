@@ -1,12 +1,12 @@
 """
-Configuration pour l'application Flask
+Configuration pour l'application Flask - Version optimisée
 """
 
 import os
 from pathlib import Path
 
 class Config:
-    """Configuration de base"""
+    """Configuration de base optimisée"""
     
     # Clé secrète Flask
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -20,12 +20,12 @@ class Config:
     # Configuration audio
     AUDIO_ENABLED = os.environ.get('AUDIO_ENABLED', 'True').lower() == 'true'
     
-    # Clé API Google Cloud
+    # Clé API Google Cloud (optionnelle)
     GOOGLE_CLOUD_API_KEY = os.environ.get('GOOGLE_CLOUD_API_KEY')
     
-    # Configuration TTS
-    USE_GEMINI_TTS = os.environ.get('USE_GEMINI_TTS', 'True').lower() == 'true'
-    USE_PRO_MODEL = os.environ.get('USE_PRO_MODEL', 'True').lower() == 'true'
+    # Configuration TTS (désactivé par défaut)
+    USE_GEMINI_TTS = os.environ.get('USE_GEMINI_TTS', 'False').lower() == 'true'
+    USE_PRO_MODEL = os.environ.get('USE_PRO_MODEL', 'False').lower() == 'true'
     
     # Configuration reconnaissance vocale
     SPEECH_LANGUAGE = 'fr-FR'
@@ -77,5 +77,5 @@ config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'testing': TestingConfig,
-    'default': DevelopmentConfig
+    'default': ProductionConfig  # Production par défaut
 }
