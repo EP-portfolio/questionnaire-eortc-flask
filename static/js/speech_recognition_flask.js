@@ -170,6 +170,7 @@ class SpeechRecognitionManager {
             return;
         }
 
+
         // 2️⃣ FILTRE : Rejeter si le texte est trop long (> 12 caractères)
         // ✅ AMÉLIORATION : Limite augmentée à 15 pour accepter plus facilement
         if (cleanTranscript.length > 20) {
