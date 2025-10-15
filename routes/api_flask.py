@@ -673,6 +673,7 @@ def transcribe_chunk():
     Transcrit un chunk audio (pour Firefox/Safari)
     Utilise Google Cloud Speech-to-Text (gratuit 60min/mois, léger, pas de dépendances système)
     """
+    print("🔍 DEBUG: transcribe_chunk appelé - Version mise à jour")
     try:
         audio_file = request.files.get("audio")
 
