@@ -243,10 +243,8 @@ class QuestionnaireManager {
             }
 
             const statusText = document.getElementById('audio-status-text');
-            if (statusText) {
-                statusText.textContent = '⏳ Chargement de l\'audio...';
-                statusText.style.color = '#fff';
-            }
+            const statusContainer = document.getElementById('audio-status');
+            // Ne pas afficher le status pendant le chargement
 
             const response = await fetch(`/api/get_audio/${this.currentQuestion}`);
 
@@ -275,8 +273,9 @@ class QuestionnaireManager {
                     console.error('❌ Erreur lecture audio:', e);
                     this.showError('Erreur : Impossible de lire l\'audio');
                     this.toggleAudioButtons(false);
-                    if (statusText) {
+                    if (statusText && statusContainer) {
                         statusText.textContent = '❌ Erreur de lecture audio';
+                        statusContainer.style.display = 'block';
                     }
 
                     // ✅ REPRENDRE la reconnaissance vocale
@@ -288,15 +287,14 @@ class QuestionnaireManager {
                 this.currentAudio.play().then(() => {
                     console.log('✅ Audio lancé avec succès');
                     this.toggleAudioButtons(true);
-                    if (statusText) {
-                        statusText.textContent = '▶️ Lecture en cours...';
-                    }
+                    // Ne pas afficher le status pendant la lecture
                 }).catch(err => {
                     console.error('❌ Erreur play():', err);
                     this.showError('Erreur : Impossible de lire l\'audio');
                     this.toggleAudioButtons(false);
-                    if (statusText) {
+                    if (statusText && statusContainer) {
                         statusText.textContent = '❌ Erreur de lecture';
+                        statusContainer.style.display = 'block';
                     }
 
                     // ✅ REPRENDRE la reconnaissance vocale
@@ -311,8 +309,9 @@ class QuestionnaireManager {
 
                     // ✅ DÉLAI DE 1.5s avant d'afficher le message et reprendre
                     setTimeout(() => {
-                        if (statusText) {
+                        if (statusText && statusContainer) {
                             statusText.textContent = '✅ Lecture terminée - Vous pouvez répondre';
+                            statusContainer.style.display = 'block'; // Afficher maintenant
                         }
 
                         // ✅ REPRENDRE la reconnaissance vocale après le délai
@@ -327,8 +326,10 @@ class QuestionnaireManager {
                 const errorData = await response.json();
                 console.error('❌ Erreur serveur:', errorData);
 
-                if (statusText) {
+                const statusContainer2 = document.getElementById('audio-status');
+                if (statusText && statusContainer2) {
                     statusText.textContent = `⚠️ ${errorData.error || 'Audio non disponible'}`;
+                    statusContainer2.style.display = 'block';
                 }
 
                 // ✅ REPRENDRE la reconnaissance vocale en cas d'erreur
@@ -342,9 +343,11 @@ class QuestionnaireManager {
             console.error('❌ Erreur lecture audio:', error);
             this.showError('Audio indisponible pour cette question');
 
-            const statusText = document.getElementById('audio-status-text');
-            if (statusText) {
-                statusText.textContent = '⚠️ Audio non disponible pour cette question';
+            const statusText2 = document.getElementById('audio-status-text');
+            const statusContainer3 = document.getElementById('audio-status');
+            if (statusText2 && statusContainer3) {
+                statusText2.textContent = '⚠️ Audio non disponible pour cette question';
+                statusContainer3.style.display = 'block';
             }
 
             // ✅ REPRENDRE la reconnaissance vocale en cas d'erreur

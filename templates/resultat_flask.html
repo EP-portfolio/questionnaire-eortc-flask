@@ -19,7 +19,7 @@
             <i class="fas fa-chart-bar"></i>
             Statistiques
         </h2>
-        
+
         <div class="stats-grid" id="stats-grid">
             <!-- Sera rempli par JavaScript -->
         </div>
@@ -31,7 +31,7 @@
             <i class="fas fa-user"></i>
             Informations personnelles
         </h2>
-        
+
         <div class="info-grid" id="info-grid">
             <!-- Sera rempli par JavaScript -->
         </div>
@@ -43,7 +43,7 @@
             <i class="fas fa-list"></i>
             Détail des réponses
         </h2>
-        
+
         <div class="responses-table-container">
             <table class="responses-table" id="responses-table">
                 <thead>
@@ -82,7 +82,7 @@
             <i class="fas fa-download"></i>
             Export des données
         </h2>
-        
+
         <div class="export-buttons">
             <button class="export-btn" onclick="exportData('json')">
                 <i class="fas fa-file-code"></i>
@@ -111,7 +111,7 @@
                 Retour à l'accueil
             </button>
         </div>
-        
+
         <div class="info-box">
             <i class="fas fa-info-circle"></i>
             <span>Les données sont stockées localement jusqu'au téléchargement.</span>
@@ -120,66 +120,93 @@
 </div>
 
 <script>
-// Variables globales
-let sessionData = null;
-let responses = [];
-let statistics = {};
+    // Variables globales
+    let sessionData = null;
+    let responses = [];
+    let statistics = {};
 
-// Initialisation
-document.addEventListener('DOMContentLoaded', function() {
-    loadSessionData();
-});
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function () {
+        loadSessionData();
 
-async function loadSessionData() {
-    try {
-        const response = await fetch(`/api/get_session_data/{{ session_id }}`);
-        const result = await response.json();
-        
-        if (result.success) {
-            sessionData = result.session;
-            responses = result.responses;
-            statistics = result.statistics;
-            
-            displayStatistics();
-            displayPersonalInfo();
-            displayResponses();
-            checkMissedQuestions();
-        } else {
-            throw new Error(result.error);
+        // Lancer l'audio après 1 seconde
+        setTimeout(() => {
+            playResultsAudio();
+        }, 1000);
+    });
+
+    async function playResultsAudio() {
+        try {
+            console.log('🔊 Lecture audio résultats');
+
+            const response = await fetch(`/api/get_result_audio_dynamic/{{ session_id }}`);
+
+            if (response.ok) {
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                audio.playbackRate = 1.15;
+
+                await audio.play();
+                console.log('✅ Audio résultats joué');
+            } else {
+                console.warn('Audio résultats non disponible');
+            }
+        } catch (error) {
+            console.error('Erreur lecture audio résultats:', error);
         }
-    } catch (error) {
-        console.error('Erreur chargement données:', error);
-        alert('Erreur : ' + error.message);
     }
-}
 
-function displayStatistics() {
-    const statsGrid = document.getElementById('stats-grid');
-    
-    const stats = [
-        {
-            icon: 'fas fa-question-circle',
-            label: 'Questions répondues',
-            value: `${statistics.answered}/30`
-        },
-        {
-            icon: 'fas fa-percentage',
-            label: 'Taux de complétion',
-            value: `${statistics.completion_rate.toFixed(1)}%`
-        },
-        {
-            icon: 'fas fa-chart-line',
-            label: 'Score moyen',
-            value: statistics.average_score ? statistics.average_score.toFixed(2) : 'N/A'
-        },
-        {
-            icon: 'fas fa-clock',
-            label: 'Durée',
-            value: calculateDuration()
+    async function loadSessionData() {
+        try {
+            const response = await fetch(`/api/get_session_data/{{ session_id }}`);
+            const result = await response.json();
+
+            if (result.success) {
+                sessionData = result.session;
+                responses = result.responses;
+                statistics = result.statistics;
+
+                displayStatistics();
+                displayPersonalInfo();
+                displayResponses();
+                checkMissedQuestions();
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('Erreur chargement données:', error);
+            alert('Erreur : ' + error.message);
         }
-    ];
-    
-    statsGrid.innerHTML = stats.map(stat => `
+    }
+
+    function displayStatistics() {
+        const statsGrid = document.getElementById('stats-grid');
+
+        const stats = [
+            {
+                icon: 'fas fa-question-circle',
+                label: 'Questions répondues',
+                value: `${statistics.answered}/30`
+            },
+            {
+                icon: 'fas fa-percentage',
+                label: 'Taux de complétion',
+                value: `${statistics.completion_rate.toFixed(1)}%`
+            },
+            {
+                icon: 'fas fa-chart-line',
+                label: 'Score moyen',
+                value: statistics.average_score ? statistics.average_score.toFixed(2) : 'N/A'
+            },
+            {
+                icon: 'fas fa-clock',
+                label: 'Durée',
+                value: calculateDuration()
+            }
+        ];
+
+        statsGrid.innerHTML = stats.map(stat => `
         <div class="stat-card">
             <div class="stat-icon">
                 <i class="${stat.icon}"></i>
@@ -190,35 +217,35 @@ function displayStatistics() {
             </div>
         </div>
     `).join('');
-}
+    }
 
-function displayPersonalInfo() {
-    const infoGrid = document.getElementById('info-grid');
-    
-    const info = [
-        {
-            icon: 'fas fa-signature',
-            label: 'Initiales',
-            value: sessionData.initials
-        },
-        {
-            icon: 'fas fa-calendar-alt',
-            label: 'Date de naissance',
-            value: sessionData.birth_date
-        },
-        {
-            icon: 'fas fa-calendar-check',
-            label: 'Date du questionnaire',
-            value: sessionData.today_date
-        },
-        {
-            icon: 'fas fa-microphone',
-            label: 'Mode',
-            value: sessionData.mode
-        }
-    ];
-    
-    infoGrid.innerHTML = info.map(item => `
+    function displayPersonalInfo() {
+        const infoGrid = document.getElementById('info-grid');
+
+        const info = [
+            {
+                icon: 'fas fa-signature',
+                label: 'Initiales',
+                value: sessionData.initials
+            },
+            {
+                icon: 'fas fa-calendar-alt',
+                label: 'Date de naissance',
+                value: sessionData.birth_date
+            },
+            {
+                icon: 'fas fa-calendar-check',
+                label: 'Date du questionnaire',
+                value: sessionData.today_date
+            },
+            {
+                icon: 'fas fa-microphone',
+                label: 'Mode',
+                value: sessionData.mode
+            }
+        ];
+
+        infoGrid.innerHTML = info.map(item => `
         <div class="info-item">
             <div class="info-icon">
                 <i class="${item.icon}"></i>
@@ -229,25 +256,25 @@ function displayPersonalInfo() {
             </div>
         </div>
     `).join('');
-}
-
-function displayResponses() {
-    const tbody = document.getElementById('responses-tbody');
-    
-    // Créer un tableau avec toutes les questions
-    const allQuestions = [];
-    for (let i = 1; i <= 30; i++) {
-        const response = responses.find(r => r.question_num === i);
-        allQuestions.push({
-            question_num: i,
-            response: response
-        });
     }
-    
-    tbody.innerHTML = allQuestions.map(item => {
-        const response = item.response;
-        if (response) {
-            return `
+
+    function displayResponses() {
+        const tbody = document.getElementById('responses-tbody');
+
+        // Créer un tableau avec toutes les questions (EXCLURE Q0)
+        const allQuestions = [];
+        for (let i = 1; i <= 30; i++) { // ✅ Commence à 1, pas 0
+            const response = responses.find(r => r.question_num === i);
+            allQuestions.push({
+                question_num: i,
+                response: response
+            });
+        }
+
+        tbody.innerHTML = allQuestions.map(item => {
+            const response = item.response;
+            if (response) {
+                return `
                 <tr class="response-row answered">
                     <td>Q${item.question_num}</td>
                     <td class="question-text">${truncateText(response.question_text, 60)}</td>
@@ -255,8 +282,8 @@ function displayResponses() {
                     <td class="score">${response.score}</td>
                 </tr>
             `;
-        } else {
-            return `
+            } else {
+                return `
                 <tr class="response-row missed">
                     <td>Q${item.question_num}</td>
                     <td class="question-text">Question ${item.question_num}</td>
@@ -264,144 +291,144 @@ function displayResponses() {
                     <td class="score">-</td>
                 </tr>
             `;
-        }
-    }).join('');
-}
+            }
+        }).join('');
+    }
 
-function checkMissedQuestions() {
-    if (statistics.missed > 0) {
-        const missedNums = [];
+    function checkMissedQuestions() {
+        if (statistics.missed > 0) {
+            const missedNums = [];
+            for (let i = 1; i <= 30; i++) { // ✅ Commence à 1, pas 0
+                if (!responses.find(r => r.question_num === i)) {
+                    missedNums.push(i);
+                }
+            }
+
+            document.getElementById('missed-text').textContent =
+                `${statistics.missed} question(s) non répondue(s) : ${missedNums.join(', ')}`;
+            document.getElementById('missed-section').style.display = 'block';
+        }
+    }
+
+    function calculateDuration() {
+        if (sessionData.created_at && sessionData.completed_at) {
+            const start = new Date(sessionData.created_at);
+            const end = new Date(sessionData.completed_at);
+            const duration = Math.floor((end - start) / 1000 / 60);
+            return `${duration} min`;
+        }
+        return 'N/A';
+    }
+
+    function truncateText(text, maxLength) {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    }
+
+    async function exportData(format) {
+        try {
+            const response = await fetch(`/api/export_session/{{ session_id }}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const data = result.data;
+
+                if (format === 'json') {
+                    downloadJSON(data);
+                } else if (format === 'csv') {
+                    downloadCSV(data);
+                } else if (format === 'excel') {
+                    downloadExcel(data);
+                }
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('Erreur export:', error);
+            alert('Erreur : ' + error.message);
+        }
+    }
+
+    function downloadJSON(data) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eortc_questionnaire_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadCSV(data) {
+        // Créer les données CSV
+        const csvData = [];
+
+        // Informations personnelles
+        Object.entries(data.session).forEach(([key, value]) => {
+            if (key !== 'id' && key !== 'created_at' && key !== 'completed_at') {
+                csvData.push(['Info personnelle', key, value, '']);
+            }
+        });
+
+        // Réponses
+        data.responses.forEach(response => {
+            csvData.push([
+                'Réponse',
+                `Q${response.question_num}: ${response.question_text}`,
+                response.response_text,
+                response.score
+            ]);
+        });
+
+        // Créer le CSV
+        const csvContent = [
+            ['Type', 'Question', 'Réponse', 'Score'],
+            ...csvData
+        ].map(row => row.join(',')).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eortc_questionnaire_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadExcel(data) {
+        // Pour Excel, on utilise une approche simplifiée
+        // En production, on pourrait utiliser une librairie comme SheetJS
+        alert('Export Excel non implémenté dans cette version. Utilisez CSV ou JSON.');
+    }
+
+    function resumeQuestionnaire() {
+        // Trouver la première question non répondue
+        let firstMissed = null;
         for (let i = 1; i <= 30; i++) {
             if (!responses.find(r => r.question_num === i)) {
-                missedNums.push(i);
+                firstMissed = i;
+                break;
             }
         }
-        
-        document.getElementById('missed-text').textContent = 
-            `${statistics.missed} question(s) non répondue(s) : ${missedNums.join(', ')}`;
-        document.getElementById('missed-section').style.display = 'block';
-    }
-}
 
-function calculateDuration() {
-    if (sessionData.created_at && sessionData.completed_at) {
-        const start = new Date(sessionData.created_at);
-        const end = new Date(sessionData.completed_at);
-        const duration = Math.floor((end - start) / 1000 / 60);
-        return `${duration} min`;
-    }
-    return 'N/A';
-}
-
-function truncateText(text, maxLength) {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-}
-
-async function exportData(format) {
-    try {
-        const response = await fetch(`/api/export_session/{{ session_id }}`);
-        const result = await response.json();
-        
-        if (result.success) {
-            const data = result.data;
-            
-            if (format === 'json') {
-                downloadJSON(data);
-            } else if (format === 'csv') {
-                downloadCSV(data);
-            } else if (format === 'excel') {
-                downloadExcel(data);
-            }
-        } else {
-            throw new Error(result.error);
-        }
-    } catch (error) {
-        console.error('Erreur export:', error);
-        alert('Erreur : ' + error.message);
-    }
-}
-
-function downloadJSON(data) {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `eortc_questionnaire_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-function downloadCSV(data) {
-    // Créer les données CSV
-    const csvData = [];
-    
-    // Informations personnelles
-    Object.entries(data.session).forEach(([key, value]) => {
-        if (key !== 'id' && key !== 'created_at' && key !== 'completed_at') {
-            csvData.push(['Info personnelle', key, value, '']);
-        }
-    });
-    
-    // Réponses
-    data.responses.forEach(response => {
-        csvData.push([
-            'Réponse',
-            `Q${response.question_num}: ${response.question_text}`,
-            response.response_text,
-            response.score
-        ]);
-    });
-    
-    // Créer le CSV
-    const csvContent = [
-        ['Type', 'Question', 'Réponse', 'Score'],
-        ...csvData
-    ].map(row => row.join(',')).join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `eortc_questionnaire_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-function downloadExcel(data) {
-    // Pour Excel, on utilise une approche simplifiée
-    // En production, on pourrait utiliser une librairie comme SheetJS
-    alert('Export Excel non implémenté dans cette version. Utilisez CSV ou JSON.');
-}
-
-function resumeQuestionnaire() {
-    // Trouver la première question non répondue
-    let firstMissed = null;
-    for (let i = 1; i <= 30; i++) {
-        if (!responses.find(r => r.question_num === i)) {
-            firstMissed = i;
-            break;
+        if (firstMissed) {
+            window.location.href = `/questionnaire?session_id={{ session_id }}&question=${firstMissed}`;
         }
     }
-    
-    if (firstMissed) {
-        window.location.href = `/questionnaire?session_id={{ session_id }}&question=${firstMissed}`;
+
+    function startNewQuestionnaire() {
+        // Nettoyer le localStorage
+        localStorage.removeItem('session_id');
+        localStorage.removeItem('browser_type');
+        localStorage.removeItem('audio_tested');
+        localStorage.removeItem('micro_tested');
+
+        // Rediriger vers l'accueil
+        window.location.href = '/accueil';
     }
-}
 
-function startNewQuestionnaire() {
-    // Nettoyer le localStorage
-    localStorage.removeItem('session_id');
-    localStorage.removeItem('browser_type');
-    localStorage.removeItem('audio_tested');
-    localStorage.removeItem('micro_tested');
-    
-    // Rediriger vers l'accueil
-    window.location.href = '/accueil';
-}
-
-function goHome() {
-    window.location.href = '/';
-}
+    function goHome() {
+        window.location.href = '/';
+    }
 </script>
 {% endblock %}

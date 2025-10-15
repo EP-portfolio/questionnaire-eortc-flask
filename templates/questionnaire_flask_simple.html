@@ -45,40 +45,29 @@
             </div>
         </div>
 
-        <!-- Tests -->
-        <div class="test-buttons" style="margin-top: 2rem;">
-            <div class="test-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="test-box">
-                    <h4 class="test-title">
-                        <i class="fas fa-volume-up"></i>
-                        Audio
-                    </h4>
-                    <div style="padding: 1rem; text-align: center; color: #666; font-style: italic;">
-                        L'audio se lancera automatiquement
-                    </div>
-                </div>
-
-                <div class="test-box">
-                    <h4 class="test-title">
-                        <i class="fas fa-microphone"></i>
-                        Microphone
-                    </h4>
-                    <button class="test-btn" id="test-micro-btn" onclick="testMicrophone()">
-                        <i class="fas fa-microphone"></i>
-                        Tester le micro
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Case à cocher -->
+        <!-- Case à cocher (JUSTE APRÈS le texte de Q0) -->
         <div class="audio-confirmation" id="audio-confirmation"
             style="margin-top: 1.5rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border: 2px solid #4CAF50;">
             <label class="checkbox-label-large"
                 style="display: flex; align-items: center; cursor: pointer; font-size: 1.2rem;">
                 <input type="checkbox" id="audio-confirmed" style="width: 24px; height: 24px; margin-right: 1rem;">
-                <span>Cochez si vous avez entendu le test audio</span>
+                <span>✅ Cochez si vous avez entendu le test audio</span>
             </label>
+        </div>
+
+        <!-- Test Microphone -->
+        <div class="test-buttons" style="margin-top: 2rem;">
+            <div class="test-box"
+                style="padding: 1.5rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h4 class="test-title" style="margin-bottom: 1rem;">
+                    <i class="fas fa-microphone"></i>
+                    Microphone
+                </h4>
+                <button class="test-btn" id="test-micro-btn" onclick="testMicrophone()">
+                    <i class="fas fa-microphone"></i>
+                    Tester le micro
+                </button>
+            </div>
         </div>
 
         <!-- Interface test micro -->
@@ -147,8 +136,9 @@
                 ⏹️ Arrêter l'audio
             </button>
 
-            <div id="audio-status" style="margin-top: 1rem; color: white; font-size: 1rem; font-weight: 500;">
-                <span id="audio-status-text">🎵 Cliquez pour écouter la question</span>
+            <div id="audio-status"
+                style="margin-top: 1rem; color: white; font-size: 1rem; font-weight: 500; display: none;">
+                <span id="audio-status-text"></span>
             </div>
         </div>
 

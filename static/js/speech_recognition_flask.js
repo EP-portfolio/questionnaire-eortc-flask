@@ -217,8 +217,9 @@ class SpeechRecognitionManager {
                 message = 'Erreur : Accès au microphone refusé';
                 break;
             case 'network':
-                message = 'Erreur : Problème de connexion réseau';
-                break;
+                // NE PAS afficher de message - redémarrage auto
+                console.log('⚠️ Timeout réseau - redémarrage auto');
+                return; // Ne pas afficher d'erreur à l'utilisateur
             case 'aborted':
                 return;
             default:
