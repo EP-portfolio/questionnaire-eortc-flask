@@ -53,10 +53,9 @@
                         <i class="fas fa-volume-up"></i>
                         Audio
                     </h4>
-                    <button class="test-btn" id="test-audio-btn" onclick="testAudio()">
-                        <i class="fas fa-play"></i>
-                        Tester l'audio
-                    </button>
+                    <div style="padding: 1rem; text-align: center; color: #666; font-style: italic;">
+                        L'audio se lancera automatiquement
+                    </div>
                 </div>
 
                 <div class="test-box">
@@ -74,7 +73,7 @@
 
         <!-- Case à cocher -->
         <div class="audio-confirmation" id="audio-confirmation"
-            style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border: 2px solid #4CAF50;">
+            style="margin-top: 1.5rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border: 2px solid #4CAF50;">
             <label class="checkbox-label-large"
                 style="display: flex; align-items: center; cursor: pointer; font-size: 1.2rem;">
                 <input type="checkbox" id="audio-confirmed" style="width: 24px; height: 24px; margin-right: 1rem;">
@@ -103,11 +102,6 @@
 
         <!-- Résultats -->
         <div class="test-results" id="test-results" style="display: none; margin-top: 1.5rem;">
-            <div class="result-item" id="audio-result"
-                style="display: none; padding: 1rem; background: #d4edda; color: #155724; border-radius: 8px; margin-bottom: 0.5rem;">
-                <i class="fas fa-check-circle"></i>
-                <span>Audio fonctionne !</span>
-            </div>
             <div class="result-item" id="micro-result"
                 style="display: none; padding: 1rem; background: #d4edda; color: #155724; border-radius: 8px;">
                 <i class="fas fa-check-circle"></i>
@@ -232,10 +226,52 @@
         }, 500);
     }
 
-    function playQuestion0Audio() {
-        console.log('🔊 Lecture automatique audio Q0');
+    async function playQuestion0Audio() {
+        console.log('🔊 Lecture automatique audio Q0 (pré-généré)');
 
-        // Utiliser la synthèse vocale du navigateur
+        try {
+            // Charger l'audio pré-généré pour Q0
+            const response = await fetch('/api/get_audio/0');
+
+            if (response.ok) {
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+
+                // Accélération de 15% comme pour les autres questions
+                audio.playbackRate = 1.15;
+
+                audio.onplay = () => {
+                    console.log('🔊 Audio Q0 démarré (fichier pré-généré)');
+                };
+
+                audio.onended = () => {
+                    console.log('✅ Audio Q0 terminé');
+                    // La case à cocher est déjà visible
+                };
+
+                audio.onerror = (e) => {
+                    console.error('Erreur lecture audio Q0:', e);
+                    // Fallback : utiliser la synthèse vocale du navigateur
+                    playQuestion0AudioFallback();
+                };
+
+                await audio.play();
+            } else {
+                console.warn('Audio pré-généré non disponible pour Q0, utilisation du fallback');
+                playQuestion0AudioFallback();
+            }
+        } catch (error) {
+            console.error('Erreur chargement audio Q0:', error);
+            // Fallback : utiliser la synthèse vocale du navigateur
+            playQuestion0AudioFallback();
+        }
+    }
+
+    // Fonction de secours avec synthèse vocale du navigateur
+    function playQuestion0AudioFallback() {
+        console.log('🔊 Lecture audio Q0 (synthèse vocale fallback)');
+
         if ('speechSynthesis' in window) {
             const text = document.getElementById('question0-speech-text').textContent;
             const utterance = new SpeechSynthesisUtterance(text);
@@ -244,12 +280,11 @@
             utterance.pitch = 1;
 
             utterance.onstart = () => {
-                console.log('🔊 Audio Q0 démarré');
-                showTestResult('audio-result');
+                console.log('🔊 Audio Q0 (fallback) démarré');
             };
 
             utterance.onend = () => {
-                console.log('✅ Audio Q0 terminé');
+                console.log('✅ Audio Q0 (fallback) terminé');
             };
 
             utterance.onerror = (e) => {
