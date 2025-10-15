@@ -183,7 +183,7 @@
 
         // Forcer l'activation de l'audio
         localStorage.setItem('audio_enabled', 'true');
-        localStorage.setItem('browser_type', 'chrome');
+        // ✅ NE PAS forcer 'chrome' - laisser la détection automatique
 
         // Commencer par la Question 0
         showQuestion0();
@@ -221,9 +221,12 @@
 
         try {
             // Charger l'audio pré-généré pour Q0
+            console.log('📡 Requête /api/get_audio/0...');
             const response = await fetch('/api/get_audio/0');
+            console.log('📡 Réponse:', response.status, response.statusText);
 
             if (response.ok) {
+                console.log('✅ Audio pré-généré trouvé, création du blob...');
                 const audioBlob = await response.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
                 const audio = new Audio(audioUrl);
