@@ -172,7 +172,7 @@ class SpeechRecognitionManager {
 
         // 2️⃣ FILTRE : Rejeter si le texte est trop long (> 12 caractères)
         // ✅ AMÉLIORATION : Limite augmentée à 15 pour accepter plus facilement
-        if (cleanTranscript.length > 15) {
+        if (cleanTranscript.length > 20) {
             console.log(`⚠️ REJETÉ : Texte trop long (${cleanTranscript.length} caractères)`);
             console.log(`   Texte rejeté : "${cleanTranscript.substring(0, 50)}..."`);
             return;
