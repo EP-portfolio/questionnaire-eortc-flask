@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Audio Debug Firefox</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .test-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #4CAF50;
+        }
+
+        .status.error {
+            background: #f44336;
+        }
+
+        .status.info {
+            background: #2196F3;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .audio-visualizer {
+            width: 100%;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .audio-bar {
+            position: absolute;
+            bottom: 0;
+            width: 4px;
+            background: #4CAF50;
+            transition: height 0.1s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>🔧 Test Audio Debug Firefox</h1>
+
+        <div class="test-section">
+            <h2>🎤 Test Microphone Avancé</h2>
+            <button class="btn" id="start-recording" onclick="startRecording()">
+                🎤 Démarrer Enregistrement
+            </button>
+            <button class="btn" id="stop-recording" onclick="stopRecording()" disabled>
+                🛑 Arrêter Enregistrement
+            </button>
+            <div id="recording-status" class="status info">
+                Prêt pour l'enregistrement
+            </div>
+            <div class="audio-visualizer" id="audio-visualizer">
+                <!-- Barres audio apparaîtront ici -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Analyse Audio</h2>
+            <div id="audio-analysis">
+                <p><strong>Volume RMS:</strong> <span id="rms-value">0.0000</span></p>
+                <p><strong>Détection Parole:</strong> <span id="speech-detected">Non</span></p>
+                <p><strong>Chunks Envoyés:</strong> <span id="chunks-sent">0</span></p>
+                <p><strong>Transcriptions Reçues:</strong> <span id="transcriptions-received">0</span></p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🗣️ Test Transcription</h2>
+            <button class="btn" onclick="testTranscription()">
+                📤 Tester Transcription Serveur
+            </button>
+            <div id="transcription-result" class="status info">
+                Aucun test effectué
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Logs Détaillés</h2>
+            <button class="btn" onclick="clearLogs()">🗑️ Effacer</button>
+            <div id="debug-log" class="log">
+                Logs de debug apparaîtront ici...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let audioStream = null;
+        let isRecording = false;
+        let chunksSent = 0;
+        let transcriptionsReceived = 0;
+        let audioContext = null;
+        let analyser = null;
+        let dataArray = null;
+        let animationId = null;
+
+        // Rediriger les logs
+        function addLog(message) {
+            const logElement = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('debug-log').textContent = 'Logs effacés...\n';
+        }
+
+        async function startRecording() {
+            try {
+                addLog('🎤 Démarrage enregistrement...');
+
+                // Configuration audio optimisée
+                audioStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                        sampleRate: 48000,
+                        channelCount: 1,
+                        sampleSize: 16,
+                        latency: 0.01
+                    }
+                });
+
+                addLog('✅ Microphone accessible');
+
+                // Créer MediaRecorder
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                    ? 'audio/webm;codecs=opus'
+                    : 'audio/webm';
+
+                mediaRecorder = new MediaRecorder(audioStream, { mimeType });
+                addLog(`📹 MediaRecorder créé: ${mimeType}`);
+
+                // Gérer les chunks
+                mediaRecorder.ondataavailable = async (event) => {
+                    if (event.data.size > 0) {
+                        addLog(`📦 Chunk reçu: ${event.data.size} bytes`);
+                        chunksSent++;
+                        document.getElementById('chunks-sent').textContent = chunksSent;
+
+                        // Analyser l'audio
+                        const hasSpeech = await analyzeAudio(event.data);
+                        if (hasSpeech) {
+                            addLog('🗣️ Parole détectée dans le chunk');
+                            await testChunkTranscription(event.data);
+                        } else {
+                            addLog('🔇 Chunk silencieux ignoré');
+                        }
+                    }
+                };
+
+                // Démarrer l'enregistrement
+                mediaRecorder.start(3000); // Chunks de 3 secondes
+                isRecording = true;
+
+                // Mettre à jour l'UI
+                document.getElementById('start-recording').disabled = true;
+                document.getElementById('stop-recording').disabled = false;
+                document.getElementById('recording-status').textContent = '🔴 Enregistrement en cours...';
+                document.getElementById('recording-status').className = 'status info';
+
+                // Démarrer la visualisation audio
+                startAudioVisualization();
+
+                addLog('✅ Enregistrement démarré');
+
+            } catch (error) {
+                addLog(`❌ Erreur: ${error.message}`);
+                document.getElementById('recording-status').textContent = `❌ Erreur: ${error.message}`;
+                document.getElementById('recording-status').className = 'status error';
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+
+                if (audioStream) {
+                    audioStream.getTracks().forEach(track => track.stop());
+                }
+
+                if (audioContext) {
+                    audioContext.close();
+                }
+
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+
+                document.getElementById('start-recording').disabled = false;
+                document.getElementById('stop-recording').disabled = true;
+                document.getElementById('recording-status').textContent = '🛑 Enregistrement arrêté';
+                document.getElementById('recording-status').className = 'status info';
+
+                addLog('🛑 Enregistrement arrêté');
+            }
+        }
+
+        async function analyzeAudio(audioBlob) {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                const arrayBuffer = await audioBlob.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                const channelData = audioBuffer.getChannelData(0);
+                const length = channelData.length;
+
+                // Calculer RMS
+                let sum = 0;
+                for (let i = 0; i < length; i++) {
+                    sum += channelData[i] * channelData[i];
+                }
+                const rms = Math.sqrt(sum / length);
+
+                // Mettre à jour l'affichage
+                document.getElementById('rms-value').textContent = rms.toFixed(4);
+
+                const speechThreshold = 0.01;
+                const hasSpeech = rms > speechThreshold;
+                document.getElementById('speech-detected').textContent = hasSpeech ? 'Oui' : 'Non';
+
+                addLog(`📊 RMS: ${rms.toFixed(4)}, Seuil: ${speechThreshold}, Parole: ${hasSpeech}`);
+
+                return hasSpeech;
+
+            } catch (error) {
+                addLog(`⚠️ Erreur analyse audio: ${error.message}`);
+                return true; // En cas d'erreur, considérer qu'il y a de la parole
+            }
+        }
+
+        async function testChunkTranscription(audioBlob) {
+            try {
+                addLog('📤 Envoi chunk vers serveur...');
+
+                const formData = new FormData();
+                formData.append('audio', audioBlob);
+
+                const response = await fetch('/api/transcribe_chunk', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                addLog(`📡 Réponse serveur: ${response.status}`);
+
+                if (response.ok) {
+                    const result = await response.json();
+                    addLog(`📝 Résultat: ${JSON.stringify(result)}`);
+
+                    if (result.success && result.transcript && result.transcript.trim()) {
+                        transcriptionsReceived++;
+                        document.getElementById('transcriptions-received').textContent = transcriptionsReceived;
+                        addLog(`✅ Transcription: "${result.transcript}"`);
+                    } else if (result.fallback) {
+                        addLog('⚠️ Mode fallback activé (transcription vide)');
+                    } else {
+                        addLog('❌ Aucune transcription valide');
+                    }
+                } else {
+                    addLog(`❌ Erreur serveur: ${response.status}`);
+                }
+
+            } catch (error) {
+                addLog(`❌ Erreur transcription: ${error.message}`);
+            }
+        }
+
+        function startAudioVisualization() {
+            if (!audioStream) return;
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(audioStream);
+            source.connect(analyser);
+
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                if (!isRecording) return;
+
+                analyser.getByteFrequencyData(dataArray);
+
+                // Créer les barres audio
+                const visualizer = document.getElementById('audio-visualizer');
+                visualizer.innerHTML = '';
+
+                for (let i = 0; i < bufferLength; i += 4) {
+                    const bar = document.createElement('div');
+                    bar.className = 'audio-bar';
+                    bar.style.left = `${(i / bufferLength) * 100}%`;
+                    bar.style.height = `${(dataArray[i] / 255) * 100}%`;
+                    visualizer.appendChild(bar);
+                }
+
+                animationId = requestAnimationFrame(draw);
+            }
+
+            draw();
+        }
+
+        async function testTranscription() {
+            const resultElement = document.getElementById('transcription-result');
+            resultElement.textContent = '🔄 Test en cours...';
+            resultElement.className = 'status info';
+
+            try {
+                // Créer un chunk de test
+                if (!audioStream) {
+                    audioStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                            sampleRate: 48000,
+                            channelCount: 1
+                        }
+                    });
+                }
+
+                const mediaRecorder = new MediaRecorder(audioStream);
+                const chunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    chunks.push(event.data);
+                };
+
+                return new Promise((resolve) => {
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                        addLog(`🧪 Test avec chunk de ${audioBlob.size} bytes`);
+
+                        await testChunkTranscription(audioBlob);
+                        resolve();
+                    };
+
+                    mediaRecorder.start();
+                    setTimeout(() => {
+                        mediaRecorder.stop();
+                    }, 2000);
+                });
+
+            } catch (error) {
+                resultElement.textContent = `❌ Erreur: ${error.message}`;
+                resultElement.className = 'status error';
+                addLog(`❌ Erreur test: ${error.message}`);
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function () {
+            addLog('📄 Page de test chargée');
+            addLog(`🌐 Navigateur: ${navigator.userAgent}`);
+            addLog(`🎤 MediaRecorder supporté: ${!!window.MediaRecorder}`);
+            addLog(`🔊 AudioContext supporté: ${!!(window.AudioContext || window.webkitAudioContext)}`);
+        });
+    </script>
+</body>
+
+</html>

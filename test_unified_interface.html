@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Interface Unifiée - Chrome vs Firefox</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .test-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #4CAF50;
+        }
+
+        .status.error {
+            background: #f44336;
+        }
+
+        .status.info {
+            background: #2196F3;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .comparison-table th {
+            background: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+        }
+
+        .identical {
+            color: #4CAF50;
+        }
+
+        .different {
+            color: #FF9800;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>🔄 Test Interface Unifiée - Chrome vs Firefox</h1>
+
+        <div class="test-section">
+            <h2>📊 Comparaison Comportements</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Chrome</th>
+                        <th>Firefox</th>
+                        <th>Unifié</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>🎤 Interface</td>
+                        <td>Web Speech API</td>
+                        <td>MediaRecorder + Serveur</td>
+                        <td class="identical">✅ Identique</td>
+                    </tr>
+                    <tr>
+                        <td>⚡ Latence</td>
+                        <td>Temps réel</td>
+                        <td>3 secondes</td>
+                        <td class="different">⚠️ Différent</td>
+                    </tr>
+                    <tr>
+                        <td>🎯 Précision</td>
+                        <td>Haute (local)</td>
+                        <td>Variable (serveur)</td>
+                        <td class="different">⚠️ Différent</td>
+                    </tr>
+                    <tr>
+                        <td>📱 Feedback</td>
+                        <td>Notifications</td>
+                        <td>Notifications + "Firefox:"</td>
+                        <td class="identical">✅ Identique</td>
+                    </tr>
+                    <tr>
+                        <td>🔊 Audio</td>
+                        <td>Pré-généré</td>
+                        <td>Pré-généré</td>
+                        <td class="identical">✅ Identique</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Test Interface Unifiée</h2>
+            <button class="btn" id="start-unified" onclick="startUnifiedTest()">
+                🎤 Démarrer Test Unifié
+            </button>
+            <button class="btn" id="stop-unified" onclick="stopUnifiedTest()" disabled>
+                🛑 Arrêter Test
+            </button>
+            <div id="unified-status" class="status info">
+                Prêt pour le test unifié
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📈 Résultats du Test</h2>
+            <div id="test-results">
+                <p><strong>Navigateur détecté:</strong> <span id="browser-detected">-</span></p>
+                <p><strong>Manager utilisé:</strong> <span id="manager-used">-</span></p>
+                <p><strong>Transcriptions reçues:</strong> <span id="transcriptions-count">0</span></p>
+                <p><strong>Dernière transcription:</strong> <span id="last-transcript">-</span></p>
+                <p><strong>Confiance moyenne:</strong> <span id="avg-confidence">-</span></p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Logs de Test</h2>
+            <button class="btn" onclick="clearLogs()">🗑️ Effacer</button>
+            <div id="test-log" class="log">
+                Logs de test apparaîtront ici...
+            </div>
+        </div>
+    </div>
+
+    <!-- Inclure l'interface unifiée -->
+    <script src="unified_speech_interface.js"></script>
+
+    <script>
+        let unifiedInterface = null;
+        let transcriptions = [];
+        let confidences = [];
+
+        function addLog(message) {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('test-log').textContent = 'Logs effacés...\n';
+        }
+
+        function updateResults() {
+            document.getElementById('transcriptions-count').textContent = transcriptions.length;
+            document.getElementById('last-transcript').textContent = transcriptions[transcriptions.length - 1] || '-';
+
+            if (confidences.length > 0) {
+                const avgConfidence = (confidences.reduce((a, b) => a + b, 0) / confidences.length).toFixed(2);
+                document.getElementById('avg-confidence').textContent = avgConfidence;
+            }
+        }
+
+        function startUnifiedTest() {
+            addLog('🧪 Démarrage test interface unifiée');
+
+            // Créer l'interface unifiée
+            unifiedInterface = new UnifiedSpeechInterface();
+
+            // Configurer les callbacks
+            unifiedInterface.onStart(() => {
+                addLog('✅ Reconnaissance démarrée');
+                document.getElementById('unified-status').textContent = '🎤 Écoute active...';
+                document.getElementById('unified-status').className = 'status success';
+                document.getElementById('start-unified').disabled = true;
+                document.getElementById('stop-unified').disabled = false;
+            });
+
+            unifiedInterface.onResult((data) => {
+                const { transcript, confidence } = data;
+                addLog(`📝 Transcription reçue: "${transcript}" (confiance: ${confidence.toFixed(2)})`);
+
+                transcriptions.push(transcript);
+                confidences.push(confidence);
+                updateResults();
+            });
+
+            unifiedInterface.onError((error) => {
+                addLog(`❌ Erreur: ${error}`);
+                document.getElementById('unified-status').textContent = `❌ Erreur: ${error}`;
+                document.getElementById('unified-status').className = 'status error';
+            });
+
+            unifiedInterface.onStop(() => {
+                addLog('🛑 Reconnaissance arrêtée');
+                document.getElementById('unified-status').textContent = '🛑 Arrêté';
+                document.getElementById('unified-status').className = 'status info';
+                document.getElementById('start-unified').disabled = false;
+                document.getElementById('stop-unified').disabled = true;
+            });
+
+            // Démarrer la reconnaissance
+            unifiedInterface.startListening();
+        }
+
+        function stopUnifiedTest() {
+            if (unifiedInterface) {
+                unifiedInterface.stopListening();
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function () {
+            addLog('📄 Page de test chargée');
+
+            // Détecter le navigateur
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
+            const isFirefox = userAgent.includes('firefox');
+            const browser = isChrome ? 'Chrome' : isFirefox ? 'Firefox' : 'Autre';
+
+            document.getElementById('browser-detected').textContent = browser;
+            addLog(`🌐 Navigateur détecté: ${browser}`);
+
+            // Afficher les informations de comparaison
+            addLog('📊 Comparaison des comportements:');
+            addLog('  - Chrome: Web Speech API (temps réel)');
+            addLog('  - Firefox: MediaRecorder + Serveur (3s chunks)');
+            addLog('  - Interface unifiée: Masque les différences');
+        });
+    </script>
+</body>
+
+</html>

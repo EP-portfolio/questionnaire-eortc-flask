@@ -436,12 +436,16 @@ class FallbackRecognitionManager {
         try {
             console.log('🎤 Démarrage écoute continue (fallback - Whisper)');
 
-            // ✅ Obtenir accès au microphone
+            // ✅ Obtenir accès au microphone avec configuration optimisée
             this.audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
-                    sampleRate: 16000
+                    autoGainControl: true,
+                    sampleRate: 48000,  // ✅ CORRECTION : 48kHz pour WEBM OPUS
+                    channelCount: 1,    // ✅ CORRECTION : Mono
+                    sampleSize: 16,     // ✅ CORRECTION : 16-bit
+                    latency: 0.01       // ✅ CORRECTION : Latence réduite
                 }
             });
 
@@ -495,13 +499,20 @@ class FallbackRecognitionManager {
         }
 
         // ✅ FILTRE : Ignorer les chunks trop petits (bruit de fond)
-        if (audioBlob.size < 1000) {
+        if (audioBlob.size < 5000) {
             console.log('🔇 Chunk trop petit ignoré:', audioBlob.size, 'bytes');
             return;
         }
 
+        // ✅ FILTRE : Vérifier si l'audio contient de la parole
+        const hasSpeech = await this.detectSpeech(audioBlob);
+        if (!hasSpeech) {
+            console.log('🔇 Chunk silencieux ignoré');
+            return;
+        }
+
         try {
-            console.log('🦊 Firefox : Transcription chunk audio');
+            console.log('🦊 Firefox : Transcription chunk audio avec parole détectée');
             console.log(`🔍 DEBUG: Taille chunk: ${audioBlob.size} bytes`);
             console.log(`🔍 DEBUG: Type chunk: ${audioBlob.type}`);
 
@@ -510,6 +521,41 @@ class FallbackRecognitionManager {
 
         } catch (error) {
             console.error('❌ Erreur transcription chunk:', error);
+        }
+    }
+
+    // ✅ NOUVELLE MÉTHODE : Détection de parole basique
+    async detectSpeech(audioBlob) {
+        try {
+            // Créer un AudioContext pour analyser l'audio
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const arrayBuffer = await audioBlob.arrayBuffer();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+            // Analyser les données audio
+            const channelData = audioBuffer.getChannelData(0);
+            const length = channelData.length;
+
+            // Calculer le volume RMS (Root Mean Square)
+            let sum = 0;
+            for (let i = 0; i < length; i++) {
+                sum += channelData[i] * channelData[i];
+            }
+            const rms = Math.sqrt(sum / length);
+
+            // Seuil de détection de parole (ajustable)
+            const speechThreshold = 0.01;
+            const hasSpeech = rms > speechThreshold;
+
+            console.log(`🔍 DEBUG: RMS audio: ${rms.toFixed(4)}, Seuil: ${speechThreshold}, Parole: ${hasSpeech}`);
+
+            audioContext.close();
+            return hasSpeech;
+
+        } catch (error) {
+            console.warn('⚠️ Erreur détection parole:', error);
+            // En cas d'erreur, considérer qu'il y a de la parole
+            return true;
         }
     }
 

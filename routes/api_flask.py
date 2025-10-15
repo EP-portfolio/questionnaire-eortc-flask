@@ -677,7 +677,9 @@ def transcribe_chunk():
     print("🔍 DEBUG: transcribe_chunk appelé - Version mise à jour")
     try:
         # ✅ PROTECTION : Limiter la taille des chunks
-        if request.content_length and request.content_length > 10 * 1024 * 1024:  # 10MB max
+        if (
+            request.content_length and request.content_length > 10 * 1024 * 1024
+        ):  # 10MB max
             print("❌ DEBUG: Chunk trop volumineux")
             return jsonify({"error": "Chunk too large"}), 413
         audio_file = request.files.get("audio")
@@ -727,11 +729,14 @@ def transcribe_chunk():
         payload = {
             "config": {
                 "encoding": "WEBM_OPUS",
-                "sampleRateHertz": 48000,  # ✅ CORRECTION : Fréquence WEBM OPUS
-                "audioChannelCount": 2,  # ✅ CORRECTION : Canaux stéréo WEBM OPUS
+                "sampleRateHertz": 48000,
+                "audioChannelCount": 1,  # ✅ CORRECTION : Mono pour Firefox
                 "languageCode": "fr-FR",
-                "model": "command_and_search",  # Optimisé pour réponses courtes
+                "model": "latest_long",  # ✅ CORRECTION : Modèle plus récent
                 "enableAutomaticPunctuation": False,
+                "enableWordTimeOffsets": False,
+                "enableWordConfidence": True,  # ✅ Ajouter confiance
+                "useEnhanced": True,  # ✅ Utiliser modèle amélioré
             },
             "audio": {"content": audio_base64},
         }
@@ -763,11 +768,35 @@ def transcribe_chunk():
         transcript = ""
         if "results" in result and len(result["results"]) > 0:
             transcript = result["results"][0]["alternatives"][0]["transcript"]
-            print(f"📝 Transcription Google Cloud: {transcript}")
+            confidence = result["results"][0]["alternatives"][0].get("confidence", 0)
+            print(
+                f"📝 Transcription Google Cloud: {transcript} (confiance: {confidence})"
+            )
+
+            # ✅ FILTRE : Ignorer les transcriptions de faible confiance
+            if confidence < 0.3:
+                print(f"⚠️ Transcription de faible confiance ignorée: {confidence}")
+                return jsonify(
+                    {
+                        "success": True,
+                        "transcript": "",
+                        "fallback": True,
+                    }
+                )
+
             return jsonify({"success": True, "transcript": transcript})
         else:
             print(f"⚠️ DEBUG: Aucun résultat dans la réponse: {result}")
             print(f"⚠️ DEBUG: Structure de la réponse: {list(result.keys())}")
+
+            # ✅ DIAGNOSTIC : Analyser pourquoi pas de résultat
+            if "error" in result:
+                print(f"❌ Erreur API: {result['error']}")
+            elif "totalBilledTime" in result and result["totalBilledTime"] == "0s":
+                print(
+                    "⚠️ Aucune parole détectée par Google Cloud (audio silencieux ou qualité insuffisante)"
+                )
+
             # ✅ FALLBACK : Si pas de résultat, retourner une transcription vide
             print("🌐 Tous navigateurs : Pas de résultat - Mode fallback activé")
             return jsonify(
@@ -783,7 +812,7 @@ def transcribe_chunk():
         import traceback
 
         traceback.print_exc()
-        
+
         # ✅ FALLBACK ROBUSTE : Retourner une réponse vide au lieu d'erreur 500
         print("🛡️ Protection : Retour fallback au lieu d'erreur 500")
         return jsonify(
