@@ -189,9 +189,15 @@
         showQuestion0();
 
         // Initialiser la reconnaissance vocale (mais ne pas démarrer encore)
-        if (window.initSpeechRecognition) {
-            initSpeechRecognition();
-        }
+        // ✅ DÉLAI pour s'assurer que speech_recognition_flask.js est chargé
+        setTimeout(() => {
+            if (window.initSpeechRecognition) {
+                console.log('🔧 Initialisation reconnaissance vocale...');
+                initSpeechRecognition();
+            } else {
+                console.warn('⚠️ initSpeechRecognition non disponible');
+            }
+        }, 500);
 
         // Écouter la case à cocher
         const audioCheckbox = document.getElementById('audio-confirmed');
@@ -465,10 +471,20 @@
             console.log('🦊 Firefox détecté - Utilisation du fallbackManager');
             // Pour Firefox, utiliser le fallbackManager au lieu de Web Speech API
             if (window.fallbackManager) {
+                console.log('✅ fallbackManager disponible - Démarrage Firefox');
                 window.fallbackManager.startContinuousSpeech();
                 return;
             } else {
-                alert('Erreur : La reconnaissance vocale n\'est pas disponible.');
+                console.error('❌ fallbackManager non disponible - Attendre l\'initialisation');
+                // ✅ RETRY : Attendre que fallbackManager soit créé
+                setTimeout(() => {
+                    if (window.fallbackManager) {
+                        console.log('✅ fallbackManager maintenant disponible - Démarrage Firefox');
+                        window.fallbackManager.startContinuousSpeech();
+                    } else {
+                        alert('Erreur : La reconnaissance vocale n\'est pas disponible sur Firefox.');
+                    }
+                }, 1000);
                 return;
             }
         }
