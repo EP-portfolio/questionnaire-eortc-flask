@@ -478,6 +478,9 @@
         // ✅ VÉRIFICATION : Chrome/Edge uniquement
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             console.log('🦊 Firefox détecté - Utilisation du fallbackManager');
+            console.log('🔍 DEBUG: window.fallbackManager:', !!window.fallbackManager);
+            console.log('🔍 DEBUG: window.speechManager:', !!window.speechManager);
+
             // Pour Firefox, utiliser le fallbackManager au lieu de Web Speech API
             if (window.fallbackManager) {
                 console.log('✅ fallbackManager disponible - Démarrage Firefox');
@@ -485,12 +488,19 @@
                 return;
             } else {
                 console.error('❌ fallbackManager non disponible - Attendre l\'initialisation');
+                console.log('🔍 DEBUG: Variables globales disponibles:');
+                console.log('  - window.speechManager:', !!window.speechManager);
+                console.log('  - window.fallbackManager:', !!window.fallbackManager);
+                console.log('  - window.initSpeechRecognition:', !!window.initSpeechRecognition);
+
                 // ✅ RETRY : Attendre que fallbackManager soit créé
                 setTimeout(() => {
+                    console.log('🔍 DEBUG: Retry - window.fallbackManager:', !!window.fallbackManager);
                     if (window.fallbackManager) {
                         console.log('✅ fallbackManager maintenant disponible - Démarrage Firefox');
                         window.fallbackManager.startContinuousSpeech();
                     } else {
+                        console.error('❌ fallbackManager toujours non disponible après retry');
                         alert('Erreur : La reconnaissance vocale n\'est pas disponible sur Firefox.');
                     }
                 }, 1000);

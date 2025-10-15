@@ -463,11 +463,11 @@ class FallbackRecognitionManager {
                 console.error('❌ Erreur MediaRecorder:', error);
             };
 
-            // ✅ CRUCIAL : Découper en chunks de 2 secondes
-            this.mediaRecorder.start(2000);
+            // ✅ AMÉLIORATION : Chunks de 3 secondes pour meilleure qualité
+            this.mediaRecorder.start(3000);
             this.isListening = true;
 
-            console.log('✅ Écoute continue démarrée (chunks de 2s)');
+            console.log('✅ Écoute continue démarrée (chunks de 3s)');
 
         } catch (error) {
             console.error('❌ Erreur accès microphone:', error);
@@ -494,12 +494,18 @@ class FallbackRecognitionManager {
             return;
         }
 
-        try {
-            console.log('🦊 Firefox : Transcription directe avec serveur');
-            console.log(`🔍 DEBUG: Taille chunk audio: ${audioBlob.size} bytes`);
-            console.log(`🔍 DEBUG: Type chunk audio: ${audioBlob.type}`);
+        // ✅ FILTRE : Ignorer les chunks trop petits (bruit de fond)
+        if (audioBlob.size < 1000) {
+            console.log('🔇 Chunk trop petit ignoré:', audioBlob.size, 'bytes');
+            return;
+        }
 
-            // ✅ APPROCHE FIREFOX : Envoyer directement au serveur sans Web Speech API
+        try {
+            console.log('🦊 Firefox : Transcription chunk audio');
+            console.log(`🔍 DEBUG: Taille chunk: ${audioBlob.size} bytes`);
+            console.log(`🔍 DEBUG: Type chunk: ${audioBlob.type}`);
+
+            // ✅ APPROCHE FIREFOX : Envoyer directement au serveur
             await this.transcribeWithServer(audioBlob);
 
         } catch (error) {
@@ -549,60 +555,77 @@ class FallbackRecognitionManager {
     }
 
     // ✅ MÉTHODE FALLBACK : Transcription avec serveur
-    // ✅ FEEDBACK VISUEL Firefox (comme Chrome)
+    // ✅ FEEDBACK VISUEL Firefox (corrigé)
     showVisualFeedback(transcript) {
+        // Supprimer les anciens feedbacks
+        const existingFeedback = document.querySelector('.firefox-feedback');
+        if (existingFeedback) {
+            existingFeedback.remove();
+        }
+
         // Créer un élément de feedback visuel
         const feedback = document.createElement('div');
+        feedback.className = 'firefox-feedback';
         feedback.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
+            padding: 12px 18px;
+            border-radius: 8px;
             font-size: 14px;
+            font-weight: 500;
             z-index: 10000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            animation: slideIn 0.3s ease-out;
-        };
-        
-        feedback.innerHTML = `
-            < div style = "display: flex; align-items: center; gap: 8px;" >
-                <i class="fas fa-microphone" style="color: #fff;"></i>
-                <span><strong>Firefox:</strong> "${transcript}"</span>
-            </div >
-            `;
-        
-        // Ajouter l'animation CSS
-        const style = document.createElement('style');
-        style.textContent = `
-        @keyframes slideIn {
-                from { transform: translateX(100 %); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-        }
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideInRight 0.3s ease-out;
+            max-width: 300px;
+            word-wrap: break-word;
         `;
-        document.head.appendChild(style);
-        
+
+        feedback.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-microphone" style="color: #fff; font-size: 16px;"></i>
+                <span><strong>Firefox:</strong> "${transcript}"</span>
+            </div>
+        `;
+
+        // Ajouter l'animation CSS si pas déjà présente
+        if (!document.querySelector('#firefox-feedback-styles')) {
+            const style = document.createElement('style');
+            style.id = 'firefox-feedback-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOutRight {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         document.body.appendChild(feedback);
-        
-        // Supprimer après 3 secondes
+
+        // Supprimer après 4 secondes avec animation
         setTimeout(() => {
             if (feedback.parentNode) {
-                feedback.style.animation = 'slideIn 0.3s ease-out reverse';
+                feedback.style.animation = 'slideOutRight 0.3s ease-in';
                 setTimeout(() => {
                     if (feedback.parentNode) {
                         feedback.parentNode.removeChild(feedback);
                     }
                 }, 300);
             }
-        }, 3000);
+        }, 4000);
     }
 
     async transcribeWithServer(audioBlob) {
         try {
             console.log('📤 Envoi chunk audio vers serveur...');
-            
+
             const formData = new FormData();
             formData.append('audio', audioBlob);
             formData.append('session_id', window.sessionId);
@@ -616,7 +639,7 @@ class FallbackRecognitionManager {
                 }
             });
 
-            console.log(`📡 Réponse serveur: ${ response.status } `);
+            console.log(`📡 Réponse serveur: ${response.status} `);
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -638,10 +661,16 @@ class FallbackRecognitionManager {
             if (result.success && result.transcript && result.transcript.trim()) {
                 const transcript = result.transcript.trim();
                 console.log('📝 Transcription serveur:', transcript);
-                
-                // ✅ FEEDBACK VISUEL Firefox (comme Chrome)
+
+                // ✅ FILTRE : Ignorer les transcriptions trop courtes ou parasites
+                if (transcript.length < 2) {
+                    console.log('🔇 Transcription trop courte ignorée:', transcript);
+                    return;
+                }
+
+                // ✅ FEEDBACK VISUEL Firefox
                 this.showVisualFeedback(transcript);
-                
+
                 this.handleSpeechResult(transcript);
             } else if (result.success && result.fallback) {
                 console.log('🦊 Firefox : Fallback activé - transcription vide ignorée');
@@ -650,6 +679,7 @@ class FallbackRecognitionManager {
                 return;
             } else {
                 console.log('📝 Aucune transcription valide reçue');
+                console.log('📝 Résultat complet:', result);
             }
 
         } catch (error) {
@@ -709,7 +739,7 @@ class FallbackRecognitionManager {
 
                 if (result.is_complete) {
                     setTimeout(() => {
-                        window.location.href = `/ resultat / ${ window.sessionId } `;
+                        window.location.href = `/ resultat / ${window.sessionId} `;
                     }, 1500);
                 } else if (result.next_question && window.questionnaireManager) {
                     setTimeout(() => {
@@ -858,60 +888,94 @@ function startRecording() {
     }
 }
 
-// ✅ CRÉATION IMMÉDIATE des managers (pas dans DOMContentLoaded)
-// ✅ FORCER Firefox pour tous les navigateurs (test)
+// ✅ DÉTECTION AMÉLIORÉE des navigateurs
 const isWebSpeechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 const userAgent = navigator.userAgent.toLowerCase();
 const isFirefox = userAgent.includes('firefox');
 const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
+const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
+const isEdge = userAgent.includes('edg');
 
-console.log('🔍 Détection navigateur:');
+console.log('🔍 Détection navigateur améliorée:');
 console.log('  - User Agent:', userAgent);
 console.log('  - Web Speech API supportée:', isWebSpeechSupported);
 console.log('  - Détecté Firefox:', isFirefox);
 console.log('  - Détecté Chrome:', isChrome);
+console.log('  - Détecté Safari:', isSafari);
+console.log('  - Détecté Edge:', isEdge);
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function () {
-    // ✅ Les managers sont déjà créés et assignés
+    console.log('📄 DOMContentLoaded - Initialisation des managers');
+
+    // ✅ CRÉER les managers maintenant que le DOM est prêt
+    managerType = createSpeechManagers();
+
+    // ✅ ASSIGNER aux variables globales
+    window.speechManager = speechManager;
+    window.fallbackManager = fallbackManager;
+
+    console.log('✅ Managers créés:', {
+        speechManager: !!speechManager,
+        fallbackManager: !!fallbackManager,
+        type: managerType
+    });
 
     window.loadQuestion = function (num) {
         if (window.questionnaireManager) {
             window.questionnaireManager.loadQuestion(num);
         }
     };
-
 });
 
-// ✅ CRÉATION IMMÉDIATE des managers (après définition des classes)
-if (isFirefox) {
-    console.log('🦊 Firefox détecté → Mode Fallback forcé');
-    fallbackManager = new FallbackRecognitionManager();
-    speechManager = null;
-} else if (isChrome && isWebSpeechSupported) {
-    console.log('🌐 Chrome détecté → Mode Web Speech API');
-    speechManager = new SpeechRecognitionManager();
-    fallbackManager = null;
-} else {
+// ✅ CRÉATION INTELLIGENTE des managers
+function createSpeechManagers() {
+    // Priorité 1: Chrome/Edge avec Web Speech API
+    if ((isChrome || isEdge) && isWebSpeechSupported) {
+        console.log('🌐 Chrome/Edge avec Web Speech API → Mode Web Speech');
+        speechManager = new SpeechRecognitionManager();
+        fallbackManager = null;
+        return 'web_speech';
+    }
+
+    // Priorité 2: Firefox/Safari ou navigateurs sans Web Speech API
+    if (isFirefox || isSafari || !isWebSpeechSupported) {
+        console.log('🦊 Firefox/Safari ou sans Web Speech → Mode Fallback');
+        fallbackManager = new FallbackRecognitionManager();
+        speechManager = null;
+        return 'fallback';
+    }
+
+    // Fallback par défaut
     console.log('❓ Navigateur inconnu → Mode Fallback par défaut');
     fallbackManager = new FallbackRecognitionManager();
     speechManager = null;
+    return 'fallback';
 }
 
-// ✅ ASSIGNATION IMMÉDIATE aux variables globales
+// ✅ CRÉATION DIFFÉRÉE des managers (après DOMContentLoaded)
+let managerType = null;
+
+// ✅ ASSIGNATION des variables globales
 window.sessionId = new URLSearchParams(window.location.search).get('session_id');
-window.speechManager = speechManager;
-window.fallbackManager = fallbackManager;
 window.currentQuestion = 1;
 
-// ✅ FONCTION D'INITIALISATION HORS DOMContentLoaded
+// ✅ FONCTION D'INITIALISATION AMÉLIORÉE
 window.initSpeechRecognition = function () {
-    console.log('initSpeechRecognition appelée');
-    if (speechManager) {
-        speechManager.init();
-    } else if (fallbackManager) {
-        fallbackManager.init();
-        // ✅ Firefox : NE PAS démarrer automatiquement (laisser l'utilisateur contrôler)
-        console.log('🚀 Firefox : FallbackRecognitionManager initialisé (démarrage manuel)');
+    console.log('🔧 initSpeechRecognition appelée');
+    console.log('🔍 DEBUG: speechManager:', !!window.speechManager);
+    console.log('🔍 DEBUG: fallbackManager:', !!window.fallbackManager);
+    console.log('🔍 DEBUG: managerType:', managerType);
+
+    if (window.speechManager) {
+        console.log('🌐 Chrome : Initialisation SpeechRecognitionManager');
+        window.speechManager.init();
+    } else if (window.fallbackManager) {
+        console.log('🦊 Firefox : Initialisation FallbackRecognitionManager');
+        window.fallbackManager.init();
+        console.log('🚀 Firefox : FallbackRecognitionManager initialisé');
+    } else {
+        console.error('❌ Aucun manager disponible !');
+        console.error('❌ Vérifiez que DOMContentLoaded a été déclenché');
     }
 };
