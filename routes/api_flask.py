@@ -724,6 +724,7 @@ def transcribe_chunk():
             "config": {
                 "encoding": "WEBM_OPUS",
                 "sampleRateHertz": 48000,  # ✅ CORRECTION : Fréquence WEBM OPUS
+                "audioChannelCount": 2,  # ✅ CORRECTION : Canaux stéréo WEBM OPUS
                 "languageCode": "fr-FR",
                 "model": "command_and_search",  # Optimisé pour réponses courtes
                 "enableAutomaticPunctuation": False,
