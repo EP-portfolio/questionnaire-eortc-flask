@@ -496,6 +496,8 @@ class FallbackRecognitionManager {
 
         try {
             console.log('🦊 Firefox : Transcription directe avec serveur');
+            console.log(`🔍 DEBUG: Taille chunk audio: ${audioBlob.size} bytes`);
+            console.log(`🔍 DEBUG: Type chunk audio: ${audioBlob.type}`);
 
             // ✅ APPROCHE FIREFOX : Envoyer directement au serveur sans Web Speech API
             await this.transcribeWithServer(audioBlob);
@@ -587,6 +589,11 @@ class FallbackRecognitionManager {
                 const transcript = result.transcript.trim();
                 console.log('📝 Transcription serveur:', transcript);
                 this.handleSpeechResult(transcript);
+            } else if (result.success && result.fallback) {
+                console.log('🦊 Firefox : Fallback activé - transcription vide ignorée');
+                console.log('🦊 Firefox : Continue d\'écouter...');
+                // ✅ IGNORER les transcriptions vides du fallback
+                return;
             } else {
                 console.log('📝 Aucune transcription valide reçue');
             }

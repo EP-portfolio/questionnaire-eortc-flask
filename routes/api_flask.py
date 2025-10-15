@@ -718,6 +718,7 @@ def transcribe_chunk():
 
         # Appel API Google Cloud Speech-to-Text
         url = f"https://speech.googleapis.com/v1/speech:recognize?key={api_key}"
+        print(f"🔍 DEBUG: URL API: {url[:50]}...")
 
         payload = {
             "config": {
@@ -729,8 +730,11 @@ def transcribe_chunk():
             },
             "audio": {"content": audio_base64},
         }
+        print(f"🔍 DEBUG: Payload config: {payload['config']}")
 
+        print("🔍 DEBUG: Envoi requête vers Google Cloud API...")
         response = requests.post(url, json=payload, timeout=10)
+        print(f"🔍 DEBUG: Réponse reçue - Status: {response.status_code}")
 
         # ✅ VÉRIFIER le statut de la réponse
         if response.status_code != 200:
