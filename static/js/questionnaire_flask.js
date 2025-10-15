@@ -411,10 +411,16 @@ class QuestionnaireManager {
                 statusContainer.style.display = 'block';
             }
 
-            // ✅ REPRENDRE la reconnaissance vocale
+            // ✅ REPRENDRE Chrome
             if (window.speechManager) {
                 console.log('▶️ Reprise de la reconnaissance vocale (arrêt manuel)');
                 window.speechManager.resumeRecognition();
+            }
+
+            // ✅ AJOUT : REPRENDRE Firefox aussi
+            if (window.fallbackManager) {
+                console.log('🦊 Firefox : Redémarrage de l\'écoute continue après arrêt manuel');
+                window.fallbackManager.startContinuousSpeech();
             }
         }, 100); // Petit délai pour que l'UI se mette à jour
     }
