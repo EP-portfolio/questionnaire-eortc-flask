@@ -160,6 +160,7 @@ class SpeechRecognitionManager {
         }
     }
 
+
     stopContinuousSpeech() {
         this.shouldRestart = false;
 
