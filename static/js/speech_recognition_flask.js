@@ -728,22 +728,31 @@ function startRecording() {
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function () {
-    // ✅ DÉTECTION AUTOMATIQUE du navigateur
+    // ✅ FORCER Firefox pour tous les navigateurs (test)
     const isWebSpeechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-    const browserType = localStorage.getItem('browser_type');
-
-    // ✅ PRIORITÉ ABSOLUE à la détection automatique (ignorer localStorage)
-    const isWebSpeechMode = isWebSpeechSupported;
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isFirefox = userAgent.includes('firefox');
+    const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
 
     console.log('🔍 Détection navigateur:');
+    console.log('  - User Agent:', userAgent);
     console.log('  - Web Speech API supportée:', isWebSpeechSupported);
-    console.log('  - browser_type localStorage:', browserType);
-    console.log('  - Mode choisi:', isWebSpeechMode ? 'Chrome (Web Speech)' : 'Firefox (Fallback)');
+    console.log('  - Détecté Firefox:', isFirefox);
+    console.log('  - Détecté Chrome:', isChrome);
 
-    if (isWebSpeechMode) {
-        speechManager = new SpeechRecognitionManager();
-    } else {
+    // ✅ FORCER le mode fallback pour Firefox (même si Web Speech API existe)
+    if (isFirefox) {
+        console.log('🦊 Firefox détecté → Mode Fallback forcé');
         fallbackManager = new FallbackRecognitionManager();
+        speechManager = null;
+    } else if (isChrome && isWebSpeechSupported) {
+        console.log('🌐 Chrome détecté → Mode Web Speech API');
+        speechManager = new SpeechRecognitionManager();
+        fallbackManager = null;
+    } else {
+        console.log('❓ Navigateur inconnu → Mode Fallback par défaut');
+        fallbackManager = new FallbackRecognitionManager();
+        speechManager = null;
     }
 
     window.sessionId = new URLSearchParams(window.location.search).get('session_id');

@@ -671,7 +671,7 @@ def get_result_audio_dynamic(session_id):
 def transcribe_chunk():
     """
     Transcrit un chunk audio (pour Firefox/Safari)
-    Utilise faster-whisper (version corrigée pour Python 3.13)
+    SOLUTION HYBRIDE : faster-whisper avec fallback Google Cloud STT
     """
     try:
         audio_file = request.files.get("audio")
@@ -679,66 +679,102 @@ def transcribe_chunk():
         if not audio_file:
             return jsonify({"error": "No audio"}), 400
 
-        # ✅ Utiliser faster-whisper (version corrigée)
-        from faster_whisper import WhisperModel
-        import tempfile
-        import os
-
-        # Charger le modèle (mettre en cache global pour ne charger qu'une fois)
-        if not hasattr(current_app, "whisper_model"):
-            print("📥 Chargement modèle faster-whisper 'tiny' (une seule fois)...")
-            try:
-                # ✅ CORRECTION : Désactiver tqdm pour éviter l'erreur _lock
-                import faster_whisper
-
-                faster_whisper.utils.tqdm = lambda *args, **kwargs: None
-
-                current_app.whisper_model = WhisperModel(
-                    "tiny",
-                    device="cpu",
-                    compute_type="int8",  # Plus léger en mémoire
-                    cpu_threads=1,  # Limiter l'utilisation CPU
-                )
-                print("✅ Modèle faster-whisper chargé")
-            except Exception as model_error:
-                print(f"❌ Erreur chargement modèle: {model_error}")
-                return jsonify({"error": "Model loading failed"}), 500
-
-        # Sauvegarder temporairement
-        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
-            audio_file.save(tmp.name)
-            temp_path = tmp.name
-
+        # ✅ ESSAI 1 : faster-whisper (si disponible)
         try:
-            # Transcription avec faster-whisper (paramètres optimisés)
-            segments, info = current_app.whisper_model.transcribe(
-                temp_path,
-                language="fr",
-                beam_size=1,  # Plus rapide
-                best_of=1,  # Plus rapide
-                temperature=0.0,  # Plus déterministe
-                vad_filter=True,  # Filtre de détection de voix
-                vad_parameters=dict(min_silence_duration_ms=500),  # Éviter les silences
-            )
+            from faster_whisper import WhisperModel
+            import tempfile
+            import os
 
-            # Extraire le texte (faster-whisper retourne des segments)
-            transcript = ""
-            for segment in segments:
-                transcript += segment.text
+            # Charger le modèle (mettre en cache global pour ne charger qu'une fois)
+            if not hasattr(current_app, "whisper_model"):
+                print("📥 Tentative de chargement faster-whisper...")
+                try:
+                    # Désactiver tqdm pour éviter l'erreur _lock
+                    import faster_whisper
 
-            transcript = transcript.strip()
+                    faster_whisper.utils.tqdm = lambda *args, **kwargs: None
 
-            print(f"📝 Transcription faster-whisper: {transcript}")
-            print(
-                f"📊 Info: {info.language} (confiance: {info.language_probability:.2f})"
-            )
+                    current_app.whisper_model = WhisperModel(
+                        "tiny",
+                        device="cpu",
+                        compute_type="int8",
+                        cpu_threads=1,
+                    )
+                    print("✅ faster-whisper chargé avec succès")
+                except Exception as model_error:
+                    print(f"❌ faster-whisper non disponible: {model_error}")
+                    current_app.whisper_model = None
 
-            return jsonify({"success": True, "transcript": transcript})
+            if hasattr(current_app, "whisper_model") and current_app.whisper_model:
+                # Transcription avec faster-whisper
+                with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+                    audio_file.save(tmp.name)
+                    temp_path = tmp.name
 
-        finally:
-            # Nettoyer le fichier temporaire
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+                try:
+                    segments, info = current_app.whisper_model.transcribe(
+                        temp_path,
+                        language="fr",
+                        beam_size=1,
+                        best_of=1,
+                        temperature=0.0,
+                    )
+
+                    transcript = ""
+                    for segment in segments:
+                        transcript += segment.text
+                    transcript = transcript.strip()
+
+                    print(f"📝 Transcription faster-whisper: {transcript}")
+                    return jsonify({"success": True, "transcript": transcript})
+
+                finally:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+
+        except Exception as whisper_error:
+            print(f"❌ faster-whisper échoué: {whisper_error}")
+
+        # ✅ ESSAI 2 : Google Cloud STT (fallback)
+        print("🔄 Fallback vers Google Cloud STT...")
+        import base64
+
+        # Lire le contenu audio
+        audio_content = audio_file.read()
+        audio_base64 = base64.b64encode(audio_content).decode("utf-8")
+
+        # Récupérer la clé API
+        api_key = current_app.config.get("GOOGLE_CLOUD_API_KEY") or os.environ.get(
+            "GOOGLE_CLOUD_API_KEY"
+        )
+
+        if not api_key:
+            return jsonify({"error": "Google Cloud API key not configured"}), 500
+
+        # Appel API Google Cloud Speech-to-Text
+        url = f"https://speech.googleapis.com/v1/speech:recognize?key={api_key}"
+
+        payload = {
+            "config": {
+                "encoding": "WEBM_OPUS",
+                "sampleRateHertz": 16000,
+                "languageCode": "fr-FR",
+                "model": "command_and_search",
+                "enableAutomaticPunctuation": False,
+            },
+            "audio": {"content": audio_base64},
+        }
+
+        response = requests.post(url, json=payload, timeout=10)
+        result = response.json()
+
+        # Extraire la transcription
+        transcript = ""
+        if "results" in result and len(result["results"]) > 0:
+            transcript = result["results"][0]["alternatives"][0]["transcript"]
+
+        print(f"📝 Transcription Google Cloud (fallback): {transcript}")
+        return jsonify({"success": True, "transcript": transcript})
 
     except Exception as e:
         print(f"❌ Erreur transcription: {e}")

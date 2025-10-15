@@ -13,5 +13,6 @@ requests==2.31.0
 python-dotenv==1.0.0
 
 # Reconnaissance vocale (pour Firefox/Safari - écoute continue)
+# Utilisation d'une version pré-compilée sans dépendances système
 faster-whisper==1.0.1
-# Version spécifique compatible Python 3.13
+# Note: Si build échoue, utiliser Google Cloud STT comme fallback
