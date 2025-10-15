@@ -671,7 +671,7 @@ def get_result_audio_dynamic(session_id):
 def transcribe_chunk():
     """
     Transcrit un chunk audio (pour Firefox/Safari)
-    SOLUTION HYBRIDE : faster-whisper avec fallback Google Cloud STT
+    Utilise Google Cloud Speech-to-Text (gratuit 60min/mois, léger, pas de dépendances système)
     """
     try:
         audio_file = request.files.get("audio")
@@ -679,71 +679,16 @@ def transcribe_chunk():
         if not audio_file:
             return jsonify({"error": "No audio"}), 400
 
-        # ✅ ESSAI 1 : faster-whisper (si disponible)
-        try:
-            from faster_whisper import WhisperModel
-            import tempfile
-            import os
-
-            # Charger le modèle (mettre en cache global pour ne charger qu'une fois)
-            if not hasattr(current_app, "whisper_model"):
-                print("📥 Tentative de chargement faster-whisper...")
-                try:
-                    # Désactiver tqdm pour éviter l'erreur _lock
-                    import faster_whisper
-
-                    faster_whisper.utils.tqdm = lambda *args, **kwargs: None
-
-                    current_app.whisper_model = WhisperModel(
-                        "tiny",
-                        device="cpu",
-                        compute_type="int8",
-                        cpu_threads=1,
-                    )
-                    print("✅ faster-whisper chargé avec succès")
-                except Exception as model_error:
-                    print(f"❌ faster-whisper non disponible: {model_error}")
-                    current_app.whisper_model = None
-
-            if hasattr(current_app, "whisper_model") and current_app.whisper_model:
-                # Transcription avec faster-whisper
-                with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
-                    audio_file.save(tmp.name)
-                    temp_path = tmp.name
-
-                try:
-                    segments, info = current_app.whisper_model.transcribe(
-                        temp_path,
-                        language="fr",
-                        beam_size=1,
-                        best_of=1,
-                        temperature=0.0,
-                    )
-
-                    transcript = ""
-                    for segment in segments:
-                        transcript += segment.text
-                    transcript = transcript.strip()
-
-                    print(f"📝 Transcription faster-whisper: {transcript}")
-                    return jsonify({"success": True, "transcript": transcript})
-
-                finally:
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
-
-        except Exception as whisper_error:
-            print(f"❌ faster-whisper échoué: {whisper_error}")
-
-        # ✅ ESSAI 2 : Google Cloud STT (fallback)
-        print("🔄 Fallback vers Google Cloud STT...")
+        # ✅ Utiliser Google Cloud Speech-to-Text (même API que TTS)
         import base64
 
         # Lire le contenu audio
         audio_content = audio_file.read()
+
+        # Encoder en base64 pour l'API
         audio_base64 = base64.b64encode(audio_content).decode("utf-8")
 
-        # Récupérer la clé API
+        # Récupérer la clé API (même que pour TTS)
         api_key = current_app.config.get("GOOGLE_CLOUD_API_KEY") or os.environ.get(
             "GOOGLE_CLOUD_API_KEY"
         )
@@ -759,7 +704,7 @@ def transcribe_chunk():
                 "encoding": "WEBM_OPUS",
                 "sampleRateHertz": 16000,
                 "languageCode": "fr-FR",
-                "model": "command_and_search",
+                "model": "command_and_search",  # Optimisé pour réponses courtes
                 "enableAutomaticPunctuation": False,
             },
             "audio": {"content": audio_base64},
@@ -773,7 +718,8 @@ def transcribe_chunk():
         if "results" in result and len(result["results"]) > 0:
             transcript = result["results"][0]["alternatives"][0]["transcript"]
 
-        print(f"📝 Transcription Google Cloud (fallback): {transcript}")
+        print(f"📝 Transcription Google Cloud: {transcript}")
+
         return jsonify({"success": True, "transcript": transcript})
 
     except Exception as e:
