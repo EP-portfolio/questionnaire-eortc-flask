@@ -873,26 +873,7 @@ console.log('  - Détecté Chrome:', isChrome);
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function () {
-    // ✅ CRÉATION des managers APRÈS que les classes soient définies
-    if (isFirefox) {
-        console.log('🦊 Firefox détecté → Mode Fallback forcé');
-        fallbackManager = new FallbackRecognitionManager();
-        speechManager = null;
-    } else if (isChrome && isWebSpeechSupported) {
-        console.log('🌐 Chrome détecté → Mode Web Speech API');
-        speechManager = new SpeechRecognitionManager();
-        fallbackManager = null;
-    } else {
-        console.log('❓ Navigateur inconnu → Mode Fallback par défaut');
-        fallbackManager = new FallbackRecognitionManager();
-        speechManager = null;
-    }
-
-    // ✅ ASSIGNATION aux variables globales
-    window.sessionId = new URLSearchParams(window.location.search).get('session_id');
-    window.speechManager = speechManager;
-    window.fallbackManager = fallbackManager;
-    window.currentQuestion = 1;
+    // ✅ Les managers sont déjà créés et assignés
 
     window.loadQuestion = function (num) {
         if (window.questionnaireManager) {
@@ -900,15 +881,37 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    // ✅ Fonction d'initialisation simplifiée
-    window.initSpeechRecognition = function () {
-        console.log('initSpeechRecognition appelée');
-        if (speechManager) {
-            speechManager.init();
-        } else if (fallbackManager) {
-            fallbackManager.init();
-            // ✅ Firefox : NE PAS démarrer automatiquement (laisser l'utilisateur contrôler)
-            console.log('🚀 Firefox : FallbackRecognitionManager initialisé (démarrage manuel)');
-        }
-    };
 });
+
+// ✅ CRÉATION IMMÉDIATE des managers (après définition des classes)
+if (isFirefox) {
+    console.log('🦊 Firefox détecté → Mode Fallback forcé');
+    fallbackManager = new FallbackRecognitionManager();
+    speechManager = null;
+} else if (isChrome && isWebSpeechSupported) {
+    console.log('🌐 Chrome détecté → Mode Web Speech API');
+    speechManager = new SpeechRecognitionManager();
+    fallbackManager = null;
+} else {
+    console.log('❓ Navigateur inconnu → Mode Fallback par défaut');
+    fallbackManager = new FallbackRecognitionManager();
+    speechManager = null;
+}
+
+// ✅ ASSIGNATION IMMÉDIATE aux variables globales
+window.sessionId = new URLSearchParams(window.location.search).get('session_id');
+window.speechManager = speechManager;
+window.fallbackManager = fallbackManager;
+window.currentQuestion = 1;
+
+// ✅ FONCTION D'INITIALISATION HORS DOMContentLoaded
+window.initSpeechRecognition = function () {
+    console.log('initSpeechRecognition appelée');
+    if (speechManager) {
+        speechManager.init();
+    } else if (fallbackManager) {
+        fallbackManager.init();
+        // ✅ Firefox : NE PAS démarrer automatiquement (laisser l'utilisateur contrôler)
+        console.log('🚀 Firefox : FallbackRecognitionManager initialisé (démarrage manuel)');
+    }
+};
