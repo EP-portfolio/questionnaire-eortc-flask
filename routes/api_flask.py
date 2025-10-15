@@ -699,7 +699,10 @@ def transcribe_chunk():
             "GOOGLE_CLOUD_API_KEY"
         )
         print(f"🔍 DEBUG: Clé API présente: {api_key is not None}")
-        print(f"🔍 DEBUG: Clé API (premiers caractères): {api_key[:10] if api_key else 'None'}...")
+        print(
+            f"🔍 DEBUG: Clé API (premiers caractères): {api_key[:10] if api_key else 'None'}..."
+        )
+        print(f"🔍 DEBUG: Taille clé API: {len(api_key) if api_key else 0}")
 
         if not api_key:
             print("❌ DEBUG: Clé API Google Cloud manquante")
