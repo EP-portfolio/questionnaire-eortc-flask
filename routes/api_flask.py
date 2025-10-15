@@ -665,3 +665,54 @@ def get_result_audio_dynamic(session_id):
     except Exception as e:
         print(f"DEBUG: Erreur audio résultat dynamique: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route("/transcribe_chunk", methods=["POST"])
+def transcribe_chunk():
+    """
+    Transcrit un chunk audio (pour Firefox/Safari)
+    Utilise Whisper (local, gratuit, CPU-compatible)
+    """
+    try:
+        audio_file = request.files.get("audio")
+
+        if not audio_file:
+            return jsonify({"error": "No audio"}), 400
+
+        # ✅ Utiliser Whisper (modèle tiny : rapide, léger, gratuit)
+        import whisper
+        import tempfile
+
+        # Charger le modèle (mettre en cache global pour ne charger qu'une fois)
+        if not hasattr(current_app, "whisper_model"):
+            print("📥 Chargement modèle Whisper 'tiny' (une seule fois)...")
+            current_app.whisper_model = whisper.load_model("tiny")
+            print("✅ Modèle Whisper chargé")
+
+        # Sauvegarder temporairement
+        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+            audio_file.save(tmp.name)
+            temp_path = tmp.name
+
+        try:
+            # Transcription
+            result = current_app.whisper_model.transcribe(
+                temp_path, language="fr", fp16=False  # Compatible CPU
+            )
+            transcript = result["text"].strip()
+
+            print(f"📝 Transcription Whisper: {transcript}")
+
+            return jsonify({"success": True, "transcript": transcript})
+
+        finally:
+            # Nettoyer le fichier temporaire
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+    except Exception as e:
+        print(f"❌ Erreur transcription: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500

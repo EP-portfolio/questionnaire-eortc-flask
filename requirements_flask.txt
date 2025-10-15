@@ -11,3 +11,11 @@ requests==2.31.0
 
 # Optionnel : pour les variables d'environnement
 python-dotenv==1.0.0
+
+# Reconnaissance vocale (pour Firefox/Safari - écoute continue)
+openai-whisper==20231117
+# Dépendances Whisper (installées automatiquement avec openai-whisper)
+# - torch (PyTorch)
+# - ffmpeg-python
+# - numpy
+# - tiktoken

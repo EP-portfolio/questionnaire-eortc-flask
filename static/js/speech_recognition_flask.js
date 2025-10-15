@@ -402,89 +402,210 @@ class SpeechRecognitionManager {
 }
 
 // Mode Fallback pour Firefox/Safari
+// VERSION AMÉLIORÉE : Écoute continue via MediaRecorder + Whisper (backend)
 class FallbackRecognitionManager {
     constructor() {
         this.mediaRecorder = null;
-        this.audioChunks = [];
-        this.isRecording = false;
+        this.audioStream = null;
+        this.isListening = false;
+        this.isPaused = false;
+        this.processingResponse = false;
     }
 
-    async startRecording() {
-        if (this.isRecording) return;
+    init() {
+        console.log('✅ Mode fallback : Écoute continue Firefox (Whisper backend)');
+    }
 
-        // ✅ Arrêter l'audio quand l'utilisateur commence à enregistrer
+    // ✅ Pause/reprise (compatible avec l'API existante)
+    pauseRecognition() {
+        console.log('⏸️ Reconnaissance mise en pause (fallback)');
+        this.isPaused = true;
+    }
+
+    resumeRecognition() {
+        console.log('▶️ Reconnaissance reprise (fallback)');
+        this.isPaused = false;
+    }
+
+    async startContinuousSpeech() {
+        if (this.isListening) {
+            console.log('⚠️ Écoute déjà active');
+            return;
+        }
+
+        try {
+            console.log('🎤 Démarrage écoute continue (fallback - Whisper)');
+
+            // ✅ Obtenir accès au microphone
+            this.audioStream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 16000
+                }
+            });
+
+            // ✅ Créer MediaRecorder
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? 'audio/webm;codecs=opus'
+                : 'audio/webm';
+
+            this.mediaRecorder = new MediaRecorder(this.audioStream, { mimeType });
+
+            // ✅ Traiter chaque chunk audio
+            this.mediaRecorder.ondataavailable = async (event) => {
+                if (event.data.size > 0 && this.isListening && !this.isPaused) {
+                    await this.transcribeChunk(event.data);
+                }
+            };
+
+            this.mediaRecorder.onerror = (error) => {
+                console.error('❌ Erreur MediaRecorder:', error);
+            };
+
+            // ✅ CRUCIAL : Découper en chunks de 2 secondes
+            this.mediaRecorder.start(2000);
+            this.isListening = true;
+
+            console.log('✅ Écoute continue démarrée (chunks de 2s)');
+
+        } catch (error) {
+            console.error('❌ Erreur accès microphone:', error);
+            alert('Erreur : Impossible d\'accéder au microphone.\nVérifiez les permissions.');
+        }
+    }
+
+    stopContinuousSpeech() {
+        if (this.mediaRecorder && this.isListening) {
+            console.log('🛑 Arrêt écoute continue (fallback)');
+            this.mediaRecorder.stop();
+            this.isListening = false;
+        }
+
+        if (this.audioStream) {
+            this.audioStream.getTracks().forEach(track => track.stop());
+            this.audioStream = null;
+        }
+    }
+
+    async transcribeChunk(audioBlob) {
+        if (this.processingResponse) {
+            console.log('⏭️ Chunk ignoré (traitement en cours)');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('audio', audioBlob);
+            formData.append('session_id', window.sessionId);
+            formData.append('question_num', window.currentQuestion);
+
+            const response = await fetch('/api/transcribe_chunk', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                console.warn('⚠️ Erreur serveur transcription');
+                return;
+            }
+
+            const result = await response.json();
+
+            if (result.transcript && result.transcript.trim()) {
+                const transcript = result.transcript.trim();
+                console.log('📝 Transcription reçue:', transcript);
+
+                // ✅ Utiliser la même logique de traitement que Chrome
+                this.handleSpeechResult(transcript);
+            }
+
+        } catch (error) {
+            console.error('❌ Erreur transcription chunk:', error);
+        }
+    }
+
+    handleSpeechResult(transcript) {
+        // ✅ MÊME LOGIQUE que SpeechRecognitionManager
+        const text = transcript.toLowerCase().trim();
+
+        // Filtrage des résultats parasites
+        if (text.length > 30) {
+            console.log('⚠️ REJETÉ : Texte trop long');
+            return;
+        }
+
+        if (/question\s+\d+/.test(text)) {
+            console.log('⚠️ REJETÉ : Contient "question X"');
+            return;
+        }
+
+        console.log('✅ ACCEPTÉ :', text);
+
+        // Arrêter l'audio de la question si en cours
         if (window.stopAudioOnSpeech) {
-            console.log('🔇 Début d\'enregistrement - Arrêt de l\'audio de la question');
             window.stopAudioOnSpeech();
         }
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.mediaRecorder = new MediaRecorder(stream);
-            this.audioChunks = [];
-
-            this.mediaRecorder.ondataavailable = (event) => {
-                this.audioChunks.push(event.data);
-            };
-
-            this.mediaRecorder.onstop = () => {
-                this.processRecording();
-            };
-
-            this.mediaRecorder.start();
-            this.isRecording = true;
-            this.updateUI('recording');
-
-        } catch (error) {
-            console.error('Erreur accès microphone:', error);
-            alert('Erreur : Impossible d\'accéder au microphone');
-        }
+        // Traiter la réponse
+        this.processVoiceResponse(text);
     }
 
-    stopRecording() {
-        if (this.mediaRecorder && this.isRecording) {
-            this.mediaRecorder.stop();
-            this.isRecording = false;
-            this.updateUI('stopped');
+    async processVoiceResponse(transcript) {
+        if (this.processingResponse) {
+            console.log('⏭️ Déjà en cours de traitement');
+            return;
         }
-    }
 
-    async processRecording() {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
-
-        const formData = new FormData();
-        formData.append('audio', audioBlob);
-        formData.append('session_id', window.sessionId);
-        formData.append('question_num', window.currentQuestion);
+        this.processingResponse = true;
 
         try {
-            const response = await fetch('/api/process_audio', {
+            const response = await fetch('/api/process_voice', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: window.sessionId,
+                    question_num: window.currentQuestion,
+                    transcript: transcript
+                })
             });
 
             const result = await response.json();
 
             if (result.valid) {
-                this.showSuccess(result.response_text);
+                console.log('✅ Réponse validée:', result.response_text);
 
                 if (result.is_complete) {
                     setTimeout(() => {
                         window.location.href = `/resultat/${window.sessionId}`;
-                    }, 2000);
-                } else {
+                    }, 1500);
+                } else if (result.next_question && window.questionnaireManager) {
                     setTimeout(() => {
-                        window.loadQuestion(result.next_question);
-                    }, 2000);
+                        window.questionnaireManager.loadQuestion(result.next_question);
+                    }, 1500);
                 }
             } else {
-                this.showError(result.error || 'Réponse non reconnue');
+                console.log('❌ Réponse non reconnue');
             }
 
         } catch (error) {
-            console.error('Erreur traitement audio:', error);
-            this.showError('Erreur : Impossible de traiter l\'enregistrement');
+            console.error('❌ Erreur traitement réponse:', error);
+        } finally {
+            setTimeout(() => {
+                this.processingResponse = false;
+            }, 1000);
         }
+    }
+
+    // ✅ Méthodes de compatibilité (anciennes, pour ne pas casser l'UI existante)
+    async startRecording() {
+        // Rediriger vers écoute continue
+        await this.startContinuousSpeech();
+    }
+
+    stopRecording() {
+        // Rediriger vers arrêt écoute continue
+        this.stopContinuousSpeech();
     }
 
     updateUI(state) {
@@ -579,21 +700,28 @@ let fallbackManager = null;
 function startContinuousSpeech() {
     if (speechManager) {
         speechManager.startContinuousSpeech();
+    } else if (fallbackManager) {
+        // ✅ Firefox utilise aussi l'écoute continue maintenant
+        fallbackManager.startContinuousSpeech();
     }
 }
 
 function stopContinuousSpeech() {
     if (speechManager) {
         speechManager.stopContinuousSpeech();
+    } else if (fallbackManager) {
+        // ✅ Firefox peut aussi arrêter l'écoute continue
+        fallbackManager.stopContinuousSpeech();
     }
 }
 
 function startRecording() {
     if (fallbackManager) {
-        if (fallbackManager.isRecording) {
-            fallbackManager.stopRecording();
+        // ✅ Compatibilité : rediriger vers écoute continue
+        if (fallbackManager.isListening) {
+            fallbackManager.stopContinuousSpeech();
         } else {
-            fallbackManager.startRecording();
+            fallbackManager.startContinuousSpeech();
         }
     }
 }
