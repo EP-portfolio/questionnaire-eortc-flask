@@ -447,6 +447,10 @@
                     btn.disabled = true;
                     isRecording = false;
                     checkQ0ContinueButton();
+
+                    // ✅ REDÉMARRER Firefox après le test micro
+                    console.log('🦊 Firefox : Redémarrage après test micro');
+                    window.fallbackManager.startContinuousSpeech();
                 }, 1500);
 
                 // Restaurer la fonction originale
