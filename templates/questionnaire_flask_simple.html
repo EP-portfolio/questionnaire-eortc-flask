@@ -228,6 +228,16 @@
 
         console.log('🔊 Lecture automatique audio Q0 (pré-généré) - Consentement accordé');
 
+        // ✅ DÉTECTER Firefox et afficher un bouton de démarrage
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isFirefox = userAgent.includes('firefox');
+
+        if (isFirefox) {
+            console.log('🦊 Firefox détecté - Affichage du bouton de démarrage audio');
+            showFirefoxAudioButton();
+            return;
+        }
+
         try {
             // Charger l'audio pré-généré pour Q0
             console.log('📡 Requête /api/get_audio/0...');
@@ -326,6 +336,73 @@
             };
 
             audioConfirmation.insertBefore(testButton, audioConfirmation.firstChild);
+        }
+    }
+
+    // Fonction pour afficher le bouton de démarrage audio pour Firefox
+    function showFirefoxAudioButton() {
+        const audioConfirmation = document.getElementById('audio-confirmation');
+        if (audioConfirmation) {
+            // Ajouter un bouton de démarrage audio pour Firefox
+            const firefoxButton = document.createElement('button');
+            firefoxButton.type = 'button';
+            firefoxButton.className = 'btn btn-success btn-lg';
+            firefoxButton.style.cssText = 'width: 100%; padding: 1rem; font-size: 1.2rem; margin-bottom: 1rem; background: #28a745; border-color: #28a745;';
+            firefoxButton.innerHTML = '🔊 Démarrer l\'audio (Firefox)';
+            firefoxButton.onclick = async () => {
+                console.log('🦊 Firefox - Démarrage audio avec interaction utilisateur');
+                await playQuestion0AudioDirect();
+                firefoxButton.remove();
+            };
+
+            audioConfirmation.insertBefore(firefoxButton, audioConfirmation.firstChild);
+        }
+    }
+
+    // Fonction pour jouer l'audio Q0 directement (sans vérifications)
+    async function playQuestion0AudioDirect() {
+        console.log('🔊 Lecture directe audio Q0 (pré-généré)');
+
+        try {
+            // Charger l'audio pré-généré pour Q0
+            console.log('📡 Requête /api/get_audio/0...');
+            const response = await fetch('/api/get_audio/0');
+            console.log('📡 Réponse:', response.status, response.statusText);
+
+            if (response.ok) {
+                console.log('✅ Audio pré-généré trouvé, création du blob...');
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+
+                // Accélération de 15% comme pour les autres questions
+                audio.playbackRate = 1.15;
+
+                audio.onplay = () => {
+                    console.log('🔊 Audio Q0 démarré (fichier pré-généré)');
+                };
+
+                audio.onended = () => {
+                    console.log('✅ Audio Q0 terminé');
+                    URL.revokeObjectURL(audioUrl);
+                };
+
+                audio.onerror = (e) => {
+                    console.error('Erreur lecture audio Q0:', e);
+                    URL.revokeObjectURL(audioUrl);
+                    // Fallback : utiliser la synthèse vocale du navigateur
+                    playQuestion0AudioFallback();
+                };
+
+                await audio.play();
+            } else {
+                console.warn('Audio pré-généré non disponible pour Q0, utilisation du fallback');
+                playQuestion0AudioFallback();
+            }
+        } catch (error) {
+            console.error('Erreur chargement audio Q0:', error);
+            // Fallback : utiliser la synthèse vocale du navigateur
+            playQuestion0AudioFallback();
         }
     }
 
