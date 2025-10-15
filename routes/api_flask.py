@@ -719,12 +719,25 @@ def transcribe_chunk():
         }
 
         response = requests.post(url, json=payload, timeout=10)
-        result = response.json()
 
-        # Extraire la transcription
+        # ✅ VÉRIFIER le statut de la réponse
+        if response.status_code != 200:
+            print(f"❌ DEBUG: Erreur API Google Cloud: {response.status_code}")
+            print(f"❌ DEBUG: Réponse: {response.text}")
+            return (
+                jsonify({"error": f"Google Cloud API error: {response.status_code}"}),
+                500,
+            )
+
+        result = response.json()
+        print(f"🔍 DEBUG: Réponse Google Cloud: {result}")
+
+        # ✅ VÉRIFIER la structure de la réponse
         transcript = ""
         if "results" in result and len(result["results"]) > 0:
             transcript = result["results"][0]["alternatives"][0]["transcript"]
+        else:
+            print(f"⚠️ DEBUG: Aucun résultat dans la réponse: {result}")
 
         print(f"📝 Transcription Google Cloud: {transcript}")
 

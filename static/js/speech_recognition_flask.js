@@ -495,23 +495,10 @@ class FallbackRecognitionManager {
         }
 
         try {
-            // ✅ APPROCHE UNMUTE.SH : Utiliser Web Speech API côté client
-            console.log('🦊 Firefox : Utilisation de Web Speech API côté client');
+            console.log('🦊 Firefox : Transcription directe avec serveur');
 
-            // Créer un objet Audio pour analyser l'audio
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
-
-            // ✅ UTILISER Web Speech API directement (comme unmute.sh)
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                await this.transcribeWithWebSpeech(audioBlob);
-            } else {
-                console.log('⚠️ Web Speech API non disponible, utilisation du serveur');
-                await this.transcribeWithServer(audioBlob);
-            }
-
-            // Nettoyer l'URL
-            URL.revokeObjectURL(audioUrl);
+            // ✅ APPROCHE FIREFOX : Envoyer directement au serveur sans Web Speech API
+            await this.transcribeWithServer(audioBlob);
 
         } catch (error) {
             console.error('❌ Erreur transcription chunk:', error);
@@ -562,6 +549,8 @@ class FallbackRecognitionManager {
     // ✅ MÉTHODE FALLBACK : Transcription avec serveur
     async transcribeWithServer(audioBlob) {
         try {
+            console.log('📤 Envoi chunk audio vers serveur...');
+
             const formData = new FormData();
             formData.append('audio', audioBlob);
             formData.append('session_id', window.sessionId);
@@ -569,20 +558,29 @@ class FallbackRecognitionManager {
 
             const response = await fetch('/api/transcribe_chunk', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
             });
 
+            console.log(`📡 Réponse serveur: ${response.status}`);
+
             if (!response.ok) {
-                console.warn('⚠️ Erreur serveur transcription');
+                const errorText = await response.text();
+                console.warn('⚠️ Erreur serveur transcription:', response.status, errorText);
                 return;
             }
 
             const result = await response.json();
+            console.log('📝 Résultat serveur:', result);
 
-            if (result.transcript && result.transcript.trim()) {
+            if (result.success && result.transcript && result.transcript.trim()) {
                 const transcript = result.transcript.trim();
                 console.log('📝 Transcription serveur:', transcript);
                 this.handleSpeechResult(transcript);
+            } else {
+                console.log('📝 Aucune transcription valide reçue');
             }
 
         } catch (error) {
