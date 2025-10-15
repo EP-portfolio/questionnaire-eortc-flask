@@ -311,10 +311,12 @@ class QuestionnaireManager {
 
                 this.currentAudio.onended = () => {
                     console.log('✅ Audio terminé');
-                    this.toggleAudioButtons(false);
 
-                    // ✅ DÉLAI DE 1.5s avant d'afficher le message et reprendre
+                    // ✅ DÉLAI DE 1.5s avant de changer les boutons, afficher le message et reprendre
                     setTimeout(() => {
+                        // Changer les boutons APRÈS le délai
+                        this.toggleAudioButtons(false);
+                        
                         if (statusText && statusContainer) {
                             statusText.textContent = '✅ Lecture terminée - Vous pouvez répondre';
                             statusContainer.style.display = 'block'; // Afficher maintenant

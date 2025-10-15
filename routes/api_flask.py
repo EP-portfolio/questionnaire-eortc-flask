@@ -580,19 +580,20 @@ def get_result_audio(result_type):
         print(f"DEBUG: Demande audio résultat - type: {result_type}")
 
         # Définir les textes selon le type de résultat
+        # ✅ IMPORTANT : Ces textes doivent être EXACTEMENT identiques à ceux de pregenerate_audios.py
         if result_type == "complete":
             # Message pour questionnaire complet (30/30)
             audio_text = """Félicitations, vous avez terminé le questionnaire. 
-            Vous avez répondu à 30 questions sur 30. 
-            Toutes les questions ont été répondues.
-            Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
+        Vous avez répondu à 30 questions sur 30. 
+        Toutes les questions ont été répondues.
+        Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
         elif result_type == "incomplete":
             # Message pour questionnaire incomplet
             # Note: Ce texte est générique, l'audio réel peut avoir des variations
             audio_text = """Félicitations, vous avez terminé le questionnaire. 
-            Vous avez répondu à 29 questions sur 30. 
-            1 questions restent sans réponse.
-            Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
+        Vous avez répondu à 29 questions sur 30. 
+        1 questions restent sans réponse.
+        Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
         else:
             return jsonify({"error": "Type de résultat invalide"}), 400
 
@@ -636,19 +637,20 @@ def get_result_audio_dynamic(session_id):
         print(f"DEBUG: Stats session {session_id}: {stats}")
 
         # Choisir le message selon le nombre de questions répondues
+        # ✅ IMPORTANT : Ces textes doivent être EXACTEMENT identiques à ceux de pregenerate_audios.py
         if stats["answered"] == 30:
             # Message complet
             audio_text = """Félicitations, vous avez terminé le questionnaire. 
-            Vous avez répondu à 30 questions sur 30. 
-            Toutes les questions ont été répondues.
-            Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
+        Vous avez répondu à 30 questions sur 30. 
+        Toutes les questions ont été répondues.
+        Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
         else:
             # Message incomplet (utiliser le message générique pré-enregistré)
             # Note: L'audio pré-généré dit "29 questions" mais sera utilisé pour tous les cas incomplets
             audio_text = """Félicitations, vous avez terminé le questionnaire. 
-            Vous avez répondu à 29 questions sur 30. 
-            1 questions restent sans réponse.
-            Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
+        Vous avez répondu à 29 questions sur 30. 
+        1 questions restent sans réponse.
+        Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
 
         # Trouver l'audio correspondant
         audio_path = _get_audio_cache_path(audio_text)
