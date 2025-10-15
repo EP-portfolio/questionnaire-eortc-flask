@@ -47,7 +47,9 @@ class QuestionnaireManager {
         window.currentQuestion = this.currentQuestion;
         window.loadQuestion = (num) => this.loadQuestion(num);
 
-        this.loadQuestion(this.currentQuestion);
+        // ✅ NE PAS charger automatiquement - laissons Q0 se charger d'abord
+        // this.loadQuestion(this.currentQuestion);
+        console.log('✅ QuestionnaireManager initialisé - en attente Q0');
     }
 
     async loadQuestion(questionNum) {
@@ -90,7 +92,7 @@ class QuestionnaireManager {
 
     displayQuestion(question) {
         console.log('🔍 displayQuestion() appelé avec:', question);
-        
+
         const questionNumber = document.getElementById('question-number');
         const questionSpeechText = document.getElementById('question-speech-text');
 
@@ -234,6 +236,12 @@ class QuestionnaireManager {
         try {
             console.log(`📊 DEBUG: Tentative de lecture audio pour question ${this.currentQuestion}`);
 
+            // ✅ METTRE EN PAUSE la reconnaissance vocale pendant la lecture
+            if (window.speechManager && window.speechManager.recognition) {
+                console.log('⏸️ Mise en pause de la reconnaissance vocale');
+                window.speechManager.pauseRecognition();
+            }
+
             const statusText = document.getElementById('audio-status-text');
             if (statusText) {
                 statusText.textContent = '⏳ Chargement de l\'audio...';
@@ -270,6 +278,11 @@ class QuestionnaireManager {
                     if (statusText) {
                         statusText.textContent = '❌ Erreur de lecture audio';
                     }
+
+                    // ✅ REPRENDRE la reconnaissance vocale
+                    if (window.speechManager) {
+                        window.speechManager.resumeRecognition();
+                    }
                 };
 
                 this.currentAudio.play().then(() => {
@@ -285,14 +298,29 @@ class QuestionnaireManager {
                     if (statusText) {
                         statusText.textContent = '❌ Erreur de lecture';
                     }
+
+                    // ✅ REPRENDRE la reconnaissance vocale
+                    if (window.speechManager) {
+                        window.speechManager.resumeRecognition();
+                    }
                 });
 
                 this.currentAudio.onended = () => {
                     console.log('✅ Audio terminé');
                     this.toggleAudioButtons(false);
-                    if (statusText) {
-                        statusText.textContent = '✅ Lecture terminée - Vous pouvez répondre';
-                    }
+
+                    // ✅ DÉLAI DE 1.5s avant d'afficher le message et reprendre
+                    setTimeout(() => {
+                        if (statusText) {
+                            statusText.textContent = '✅ Lecture terminée - Vous pouvez répondre';
+                        }
+
+                        // ✅ REPRENDRE la reconnaissance vocale après le délai
+                        if (window.speechManager) {
+                            console.log('▶️ Reprise de la reconnaissance vocale');
+                            window.speechManager.resumeRecognition();
+                        }
+                    }, 1500);
                 };
 
             } else {
@@ -301,6 +329,11 @@ class QuestionnaireManager {
 
                 if (statusText) {
                     statusText.textContent = `⚠️ ${errorData.error || 'Audio non disponible'}`;
+                }
+
+                // ✅ REPRENDRE la reconnaissance vocale en cas d'erreur
+                if (window.speechManager) {
+                    window.speechManager.resumeRecognition();
                 }
 
                 throw new Error(errorData.error || 'Audio non disponible');
@@ -312,6 +345,11 @@ class QuestionnaireManager {
             const statusText = document.getElementById('audio-status-text');
             if (statusText) {
                 statusText.textContent = '⚠️ Audio non disponible pour cette question';
+            }
+
+            // ✅ REPRENDRE la reconnaissance vocale en cas d'erreur
+            if (window.speechManager) {
+                window.speechManager.resumeRecognition();
             }
         }
     }

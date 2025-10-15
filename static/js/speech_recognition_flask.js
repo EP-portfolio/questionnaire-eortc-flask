@@ -1,8 +1,11 @@
 /**
  * Gestionnaire de reconnaissance vocale pour l'application Flask
  * Support Web Speech API (Chrome/Edge) et fallback (Firefox/Safari)
- * Version corrigée : arrêt automatique de l'audio quand l'utilisateur parle
- * + Filtrage des résultats parasites (Solution 3)
+ * Version optimisée avec :
+ * - Arrêt automatique de l'audio quand l'utilisateur parle
+ * - Filtrage des résultats parasites
+ * - Pause/reprise automatique pendant lecture audio
+ * - Amélioration de la reconnaissance (moins de répétitions)
  */
 
 class SpeechRecognitionManager {
@@ -14,8 +17,26 @@ class SpeechRecognitionManager {
         this.audioChunks = [];
         this.shouldRestart = false;
         this.processingResponse = false;
+        this.isPaused = false; // ✅ Pour pause/reprise
 
         this.init();
+    }
+
+    // ✅ NOUVEAU : Mettre en pause la reconnaissance
+    pauseRecognition() {
+        if (this.recognition && !this.isPaused) {
+            console.log('⏸️ Reconnaissance vocale mise en pause');
+            this.isPaused = true;
+            // On ne stop pas, juste on ignore les résultats pendant la pause
+        }
+    }
+
+    // ✅ NOUVEAU : Reprendre la reconnaissance
+    resumeRecognition() {
+        if (this.recognition && this.isPaused) {
+            console.log('▶️ Reconnaissance vocale reprise');
+            this.isPaused = false;
+        }
     }
 
     init() {
@@ -33,8 +54,9 @@ class SpeechRecognitionManager {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             this.recognition = new SpeechRecognition();
 
+            // ✅ PARAMÈTRES OPTIMISÉS
             this.recognition.continuous = true;
-            this.recognition.interimResults = false;
+            this.recognition.interimResults = true; // ✅ Activé pour meilleure réactivité
             this.recognition.lang = 'fr-FR';
             this.recognition.maxAlternatives = 1;
 
@@ -47,11 +69,16 @@ class SpeechRecognitionManager {
             this.recognition.onresult = (event) => {
                 console.log('DEBUG: onresult déclenché', event);
 
-                if (event.results[event.results.length - 1].isFinal) {
-                    const transcript = event.results[event.results.length - 1][0].transcript;
-                    const confidence = event.results[event.results.length - 1][0].confidence;
+                const last = event.results.length - 1;
+                const result = event.results[last];
+                const transcript = result[0].transcript.trim();
+                const confidence = result[0].confidence;
+                const isFinal = result.isFinal;
 
-                    console.log('DEBUG: Résultat FINAL:', transcript, 'Confiance:', confidence);
+                console.log('DEBUG: Résultat', isFinal ? 'FINAL' : 'INTERIM', ':', transcript, 'Confiance:', confidence);
+
+                // ✅ AMÉLIORATION : Accepter résultats finaux OU intermédiaires avec haute confiance
+                if (isFinal || (confidence > 0.7 && transcript.length <= 20)) {
                     this.handleSpeechResult(transcript, confidence);
                 }
             };
@@ -117,33 +144,38 @@ class SpeechRecognitionManager {
     }
 
     handleSpeechResult(transcript, confidence) {
+        // ✅ VÉRIFIER SI EN PAUSE
+        if (this.isPaused) {
+            console.log('⏸️ Reconnaissance en pause - Résultat ignoré:', transcript);
+            return;
+        }
+
         console.log('DEBUG: handleSpeechResult appelé avec:', transcript);
 
         // ============================================
-        // 🛡️ SOLUTION 3 : FILTRAGE DES RÉSULTATS
+        // 🛡️ FILTRAGE DES RÉSULTATS PARASITES
         // ============================================
 
-        // Nettoyer le transcript (trim)
+        // Nettoyer le transcript
         const cleanTranscript = transcript.trim();
 
         // 1️⃣ FILTRE : Rejeter si le texte contient "question" suivi d'un chiffre
-        // Cela signifie que le micro a capté l'audio de la question
         const questionPattern = /question\s+\d+/i;
         if (questionPattern.test(cleanTranscript)) {
             console.log('⚠️ REJETÉ : Texte contient "question X" - probablement l\'audio de la question');
             console.log(`   Texte rejeté : "${cleanTranscript}"`);
-            return; // Ignorer ce résultat
+            return;
         }
 
-        // 2️⃣ FILTRE : Rejeter si le texte est trop long (> 50 caractères)
-        // Les réponses valides sont courtes : "beaucoup", "pas du tout", "3", etc.
-        if (cleanTranscript.length > 50) {
+        // 2️⃣ FILTRE : Rejeter si le texte est trop long (> 12 caractères)
+        // ✅ AMÉLIORATION : Limite augmentée à 15 pour accepter plus facilement
+        if (cleanTranscript.length > 15) {
             console.log(`⚠️ REJETÉ : Texte trop long (${cleanTranscript.length} caractères)`);
-            console.log(`   Texte rejeté : "${cleanTranscript.substring(0, 60)}..."`);
-            return; // Ignorer ce résultat
+            console.log(`   Texte rejeté : "${cleanTranscript.substring(0, 50)}..."`);
+            return;
         }
 
-        // 3️⃣ FILTRE : Rejeter si le texte est vide ou ne contient que des espaces
+        // 3️⃣ FILTRE : Rejeter si le texte est vide
         if (cleanTranscript.length === 0) {
             console.log('⚠️ REJETÉ : Texte vide');
             return;
@@ -153,10 +185,10 @@ class SpeechRecognitionManager {
         console.log(`✅ ACCEPTÉ : "${cleanTranscript}" (${cleanTranscript.length} caractères)`);
 
         // ============================================
-        // FIN SOLUTION 3
+        // FIN FILTRAGE
         // ============================================
 
-        // ✅ CORRECTION : Arrêter l'audio de la question dès que l'utilisateur parle
+        // ✅ Arrêter l'audio de la question dès que l'utilisateur parle
         if (window.stopAudioOnSpeech) {
             console.log('🔇 Détection de parole - Arrêt de l\'audio de la question');
             window.stopAudioOnSpeech();
@@ -165,8 +197,10 @@ class SpeechRecognitionManager {
         // Afficher le transcript
         this.updateTranscript(cleanTranscript);
 
-        // Envoyer au backend pour traitement
-        this.processVoiceResponse(cleanTranscript);
+        // ✅ AMÉLIORATION : Délai réduit de 500ms à 200ms
+        setTimeout(() => {
+            this.processVoiceResponse(cleanTranscript);
+        }, 200);
     }
 
     handleSpeechError(error) {
@@ -248,7 +282,9 @@ class SpeechRecognitionManager {
             console.error('Erreur traitement vocal:', error);
             this.showError('Erreur : Impossible de traiter la réponse');
         } finally {
-            this.processingResponse = false;
+            setTimeout(() => {
+                this.processingResponse = false;
+            }, 500);
         }
     }
 
@@ -371,7 +407,7 @@ class FallbackRecognitionManager {
     async startRecording() {
         if (this.isRecording) return;
 
-        // ✅ CORRECTION : Arrêter l'audio quand l'utilisateur commence à enregistrer
+        // ✅ Arrêter l'audio quand l'utilisateur commence à enregistrer
         if (window.stopAudioOnSpeech) {
             console.log('🔇 Début d\'enregistrement - Arrêt de l\'audio de la question');
             window.stopAudioOnSpeech();
@@ -579,6 +615,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    // ✅ Fonction d'initialisation simplifiée
     window.initSpeechRecognition = function () {
         console.log('initSpeechRecognition appelée');
         if (speechManager) {

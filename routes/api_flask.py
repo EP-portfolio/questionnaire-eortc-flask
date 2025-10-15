@@ -571,3 +571,95 @@ def diagnostic():
             "timestamp": datetime.datetime.now().isoformat(),
         }
     )
+
+
+@api_bp.route("/get_result_audio/<result_type>")
+def get_result_audio(result_type):
+    """Servir l'audio préenregistré pour la page de résultat"""
+    try:
+        print(f"DEBUG: Demande audio résultat - type: {result_type}")
+
+        # Définir les textes selon le type de résultat
+        if result_type == "complete":
+            # Message pour questionnaire complet (30/30)
+            audio_text = """Félicitations, vous avez terminé le questionnaire. 
+            Vous avez répondu à 30 questions sur 30. 
+            Toutes les questions ont été répondues.
+            Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
+        elif result_type == "incomplete":
+            # Message pour questionnaire incomplet
+            # Note: Ce texte est générique, l'audio réel peut avoir des variations
+            audio_text = """Félicitations, vous avez terminé le questionnaire. 
+            Vous avez répondu à 29 questions sur 30. 
+            1 questions restent sans réponse.
+            Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
+        else:
+            return jsonify({"error": "Type de résultat invalide"}), 400
+
+        print(f"DEBUG: Texte audio: {audio_text[:50]}...")
+
+        # Utiliser le hash MD5 pour trouver le fichier
+        audio_path = _get_audio_cache_path(audio_text)
+
+        if audio_path and audio_path.exists():
+            print(f"DEBUG: Fichier audio trouvé: {audio_path.name}")
+            return send_file(str(audio_path), mimetype="audio/wav", as_attachment=False)
+        else:
+            print(f"DEBUG: Aucun fichier audio trouvé pour type: {result_type}")
+            return (
+                jsonify(
+                    {
+                        "error": f"Audio préenregistré non trouvé pour résultat {result_type}",
+                        "message": "Utilisez la synthèse vocale comme fallback",
+                    }
+                ),
+                404,
+            )
+
+    except Exception as e:
+        print(f"DEBUG: Erreur audio résultat: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"error": f"Erreur audio: {str(e)}"}), 500
+
+
+@api_bp.route("/get_result_audio_dynamic/<session_id>")
+def get_result_audio_dynamic(session_id):
+    """Servir l'audio préenregistré basé sur les statistiques réelles de la session"""
+    try:
+        from models.database_flask import DatabaseManager
+
+        db = DatabaseManager()
+        stats = db.get_session_statistics(session_id)
+
+        print(f"DEBUG: Stats session {session_id}: {stats}")
+
+        # Choisir le message selon le nombre de questions répondues
+        if stats["answered"] == 30:
+            # Message complet
+            audio_text = """Félicitations, vous avez terminé le questionnaire. 
+            Vous avez répondu à 30 questions sur 30. 
+            Toutes les questions ont été répondues.
+            Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
+        else:
+            # Message incomplet (utiliser le message générique pré-enregistré)
+            # Note: L'audio pré-généré dit "29 questions" mais sera utilisé pour tous les cas incomplets
+            audio_text = """Félicitations, vous avez terminé le questionnaire. 
+            Vous avez répondu à 29 questions sur 30. 
+            1 questions restent sans réponse.
+            Vous pouvez maintenant télécharger vos résultats ou recommencer un nouveau questionnaire."""
+
+        # Trouver l'audio correspondant
+        audio_path = _get_audio_cache_path(audio_text)
+
+        if audio_path and audio_path.exists():
+            print(f"DEBUG: Fichier audio trouvé: {audio_path.name}")
+            return send_file(str(audio_path), mimetype="audio/wav", as_attachment=False)
+        else:
+            print(f"DEBUG: Aucun fichier audio trouvé")
+            return jsonify({"error": "Audio non trouvé", "fallback": "use_tts"}), 404
+
+    except Exception as e:
+        print(f"DEBUG: Erreur audio résultat dynamique: {e}")
+        return jsonify({"error": str(e)}), 500

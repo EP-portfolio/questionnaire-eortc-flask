@@ -225,60 +225,44 @@
         document.getElementById('questions-container').style.display = 'none';
         currentQuestionNum = 0;
         updateProgress();
+
+        // ✅ LANCER AUTOMATIQUEMENT L'AUDIO DE Q0
+        setTimeout(() => {
+            playQuestion0Audio();
+        }, 500);
+    }
+
+    function playQuestion0Audio() {
+        console.log('🔊 Lecture automatique audio Q0');
+
+        // Utiliser la synthèse vocale du navigateur
+        if ('speechSynthesis' in window) {
+            const text = document.getElementById('question0-speech-text').textContent;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'fr-FR';
+            utterance.rate = 0.85;
+            utterance.pitch = 1;
+
+            utterance.onstart = () => {
+                console.log('🔊 Audio Q0 démarré');
+                showTestResult('audio-result');
+            };
+
+            utterance.onend = () => {
+                console.log('✅ Audio Q0 terminé');
+            };
+
+            utterance.onerror = (e) => {
+                console.error('Erreur synthèse vocale Q0:', e);
+            };
+
+            speechSynthesis.speak(utterance);
+        }
     }
 
     function testAudio() {
-        console.log('🔊 Test audio');
-        const btn = document.getElementById('test-audio-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lecture...';
-
-        const audio = new Audio('/api/get_audio/0');
-
-        audio.addEventListener('ended', () => {
-            console.log('Audio terminé');
-            showTestResult('audio-result');
-            btn.innerHTML = '<i class="fas fa-check"></i> Audio testé';
-            document.getElementById('audio-confirmation').style.display = 'block';
-        });
-
-        audio.addEventListener('error', (e) => {
-            console.log('Erreur audio, fallback');
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(
-                    document.getElementById('question0-speech-text').textContent
-                );
-                utterance.lang = 'fr-FR';
-                utterance.rate = 0.8;
-
-                utterance.onend = () => {
-                    showTestResult('audio-result');
-                    btn.innerHTML = '<i class="fas fa-check"></i> Audio testé';
-                    document.getElementById('audio-confirmation').style.display = 'block';
-                };
-
-                speechSynthesis.speak(utterance);
-            }
-        });
-
-        audio.play().catch((error) => {
-            console.log('Fallback synthèse vocale');
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(
-                    document.getElementById('question0-speech-text').textContent
-                );
-                utterance.lang = 'fr-FR';
-                utterance.rate = 0.8;
-
-                utterance.onend = () => {
-                    showTestResult('audio-result');
-                    btn.innerHTML = '<i class="fas fa-check"></i> Audio testé';
-                    document.getElementById('audio-confirmation').style.display = 'block';
-                };
-
-                speechSynthesis.speak(utterance);
-            }
-        });
+        // FONCTION SUPPRIMÉE - L'audio se lance automatiquement
+        console.log('testAudio() appelé mais désactivé - audio automatique');
     }
 
     function testMicrophone() {
