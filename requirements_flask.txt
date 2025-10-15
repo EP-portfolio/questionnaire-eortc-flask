@@ -13,9 +13,9 @@ requests==2.31.0
 python-dotenv==1.0.0
 
 # Reconnaissance vocale (pour Firefox/Safari - écoute continue)
-openai-whisper
-# Dépendances Whisper (installées automatiquement avec openai-whisper)
-# - torch (PyTorch)
+faster-whisper
+# Dépendances faster-whisper (installées automatiquement)
+# - torch (PyTorch optimisé)
 # - ffmpeg-python
 # - numpy
 # - tiktoken

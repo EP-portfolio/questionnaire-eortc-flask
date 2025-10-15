@@ -671,7 +671,7 @@ def get_result_audio_dynamic(session_id):
 def transcribe_chunk():
     """
     Transcrit un chunk audio (pour Firefox/Safari)
-    Utilise Whisper (local, gratuit, CPU-compatible)
+    Utilise faster-whisper (plus rapide, plus léger, gratuit)
     """
     try:
         audio_file = request.files.get("audio")
@@ -679,15 +679,15 @@ def transcribe_chunk():
         if not audio_file:
             return jsonify({"error": "No audio"}), 400
 
-        # ✅ Utiliser Whisper (modèle tiny : rapide, léger, gratuit)
-        import whisper
+        # ✅ Utiliser faster-whisper (plus rapide et léger)
+        from faster_whisper import WhisperModel
         import tempfile
 
         # Charger le modèle (mettre en cache global pour ne charger qu'une fois)
         if not hasattr(current_app, "whisper_model"):
-            print("📥 Chargement modèle Whisper 'tiny' (une seule fois)...")
-            current_app.whisper_model = whisper.load_model("tiny")
-            print("✅ Modèle Whisper chargé")
+            print("📥 Chargement modèle faster-whisper 'tiny' (une seule fois)...")
+            current_app.whisper_model = WhisperModel("tiny", device="cpu")
+            print("✅ Modèle faster-whisper chargé")
 
         # Sauvegarder temporairement
         with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
@@ -695,13 +695,26 @@ def transcribe_chunk():
             temp_path = tmp.name
 
         try:
-            # Transcription
-            result = current_app.whisper_model.transcribe(
-                temp_path, language="fr", fp16=False  # Compatible CPU
+            # Transcription avec faster-whisper
+            segments, info = current_app.whisper_model.transcribe(
+                temp_path,
+                language="fr",
+                beam_size=1,  # Plus rapide
+                best_of=1,  # Plus rapide
+                temperature=0.0,  # Plus déterministe
             )
-            transcript = result["text"].strip()
 
-            print(f"📝 Transcription Whisper: {transcript}")
+            # Extraire le texte (faster-whisper retourne des segments)
+            transcript = ""
+            for segment in segments:
+                transcript += segment.text
+
+            transcript = transcript.strip()
+
+            print(f"📝 Transcription faster-whisper: {transcript}")
+            print(
+                f"📊 Info: {info.language} (confiance: {info.language_probability:.2f})"
+            )
 
             return jsonify({"success": True, "transcript": transcript})
 

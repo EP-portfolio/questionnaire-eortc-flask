@@ -731,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ✅ DÉTECTION AUTOMATIQUE du navigateur
     const isWebSpeechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     const browserType = localStorage.getItem('browser_type');
-    
+
     // Priorité à la détection automatique, fallback sur localStorage
     const isWebSpeechMode = isWebSpeechSupported || browserType === 'chrome';
 
