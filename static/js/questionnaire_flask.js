@@ -273,7 +273,11 @@ class QuestionnaireManager {
                 const audioUrl = URL.createObjectURL(audioBlob);
                 console.log(`📊 DEBUG: URL créée: ${audioUrl}`);
 
-                this.stopAudio();
+                // ✅ ARRÊTER l'audio précédent SILENCIEUSEMENT (sans reprendre la reconnaissance)
+                if (this.currentAudio) {
+                    this.currentAudio.pause();
+                    this.currentAudio = null;
+                }
 
                 this.currentAudio = new Audio(audioUrl);
 
@@ -503,7 +507,10 @@ function stopAudio() {
 function stopAudioOnSpeech() {
     if (window.questionnaireManager && window.questionnaireManager.currentAudio) {
         console.log('🔇 L\'utilisateur parle - Arrêt de l\'audio de la question');
-        window.questionnaireManager.stopAudio();
+        // ✅ ARRÊTER l'audio SILENCIEUSEMENT (sans afficher de message ni reprendre la reconnaissance)
+        window.questionnaireManager.currentAudio.pause();
+        window.questionnaireManager.currentAudio = null;
+        window.questionnaireManager.toggleAudioButtons(false);
     }
 }
 
