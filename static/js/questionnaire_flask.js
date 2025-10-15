@@ -312,11 +312,11 @@ class QuestionnaireManager {
                 this.currentAudio.onended = () => {
                     console.log('✅ Audio terminé');
 
-                    // ✅ DÉLAI DE 1.5s avant de changer les boutons, afficher le message et reprendre
+                    // ✅ DÉLAI DE 2.5s avant de changer les boutons, afficher le message et reprendre
                     setTimeout(() => {
                         // Changer les boutons APRÈS le délai
                         this.toggleAudioButtons(false);
-                        
+
                         if (statusText && statusContainer) {
                             statusText.textContent = '✅ Lecture terminée - Vous pouvez répondre';
                             statusContainer.style.display = 'block'; // Afficher maintenant
@@ -327,7 +327,7 @@ class QuestionnaireManager {
                             console.log('▶️ Reprise de la reconnaissance vocale');
                             window.speechManager.resumeRecognition();
                         }
-                    }, 1500);
+                    }, 2500);
                 };
 
             } else {
