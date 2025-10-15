@@ -189,15 +189,24 @@
         showQuestion0();
 
         // Initialiser la reconnaissance vocale (mais ne pas démarrer encore)
-        // ✅ DÉLAI pour s'assurer que speech_recognition_flask.js est chargé
+        // ✅ DÉLAI pour s'assurer que speech_recognition_flask.js est chargé ET que DOMContentLoaded est déclenché
         setTimeout(() => {
             if (window.initSpeechRecognition) {
                 console.log('🔧 Initialisation reconnaissance vocale...');
                 initSpeechRecognition();
             } else {
-                console.warn('⚠️ initSpeechRecognition non disponible');
+                console.warn('⚠️ initSpeechRecognition non disponible - Retry dans 1s');
+                // ✅ RETRY : Attendre que DOMContentLoaded soit déclenché
+                setTimeout(() => {
+                    if (window.initSpeechRecognition) {
+                        console.log('🔧 Initialisation reconnaissance vocale (retry)...');
+                        initSpeechRecognition();
+                    } else {
+                        console.error('❌ initSpeechRecognition toujours non disponible');
+                    }
+                }, 1000);
             }
-        }, 500);
+        }, 1000);
 
         // Écouter la case à cocher
         const audioCheckbox = document.getElementById('audio-confirmed');
