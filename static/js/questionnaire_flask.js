@@ -60,6 +60,15 @@ class QuestionnaireManager {
             this.currentQuestion = questionNum;
             window.currentQuestion = questionNum;
 
+            // ✅ ARRÊTER l'audio en cours (si lecture en cours)
+            if (this.currentAudio) {
+                this.currentAudio.pause();
+                this.currentAudio = null;
+            }
+
+            // ✅ RÉINITIALISER les boutons audio
+            this.toggleAudioButtons(false);
+
             // ✅ MASQUER le status audio au début de chaque question
             const statusContainer = document.getElementById('audio-status');
             if (statusContainer) {
@@ -370,9 +379,28 @@ class QuestionnaireManager {
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
             this.currentAudio = null;
-            console.log('🔇 Audio arrêté');
+            console.log('🔇 Audio arrêté manuellement');
         }
+
+        // ✅ Changer les boutons immédiatement
         this.toggleAudioButtons(false);
+
+        // ✅ Afficher le message et reprendre la reconnaissance comme si l'audio était terminé
+        const statusText = document.getElementById('audio-status-text');
+        const statusContainer = document.getElementById('audio-status');
+
+        setTimeout(() => {
+            if (statusText && statusContainer) {
+                statusText.textContent = '✅ Lecture interrompue - Vous pouvez répondre';
+                statusContainer.style.display = 'block';
+            }
+
+            // ✅ REPRENDRE la reconnaissance vocale
+            if (window.speechManager) {
+                console.log('▶️ Reprise de la reconnaissance vocale (arrêt manuel)');
+                window.speechManager.resumeRecognition();
+            }
+        }, 100); // Petit délai pour que l'UI se mette à jour
     }
 
     toggleAudioButtons(playing) {

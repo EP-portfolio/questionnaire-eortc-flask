@@ -197,6 +197,8 @@ class VoiceRecognitionHandler:
                 text,
                 [
                     "plutot",  # 🆕 Remplacement principal
+                    "plus tot",  # 🆕 Variante courante
+                    "plus tôt",  # 🆕 Variante avec accent
                     "moyennement",
                     "moderement",
                     # Anciennes variantes "assez" conservées pour compatibilité
