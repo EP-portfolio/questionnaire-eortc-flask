@@ -549,10 +549,60 @@ class FallbackRecognitionManager {
     }
 
     // ✅ MÉTHODE FALLBACK : Transcription avec serveur
+    // ✅ FEEDBACK VISUEL Firefox (comme Chrome)
+    showVisualFeedback(transcript) {
+        // Créer un élément de feedback visuel
+        const feedback = document.createElement('div');
+        feedback.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 10000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-out;
+        };
+        
+        feedback.innerHTML = `
+            < div style = "display: flex; align-items: center; gap: 8px;" >
+                <i class="fas fa-microphone" style="color: #fff;"></i>
+                <span><strong>Firefox:</strong> "${transcript}"</span>
+            </div >
+            `;
+        
+        // Ajouter l'animation CSS
+        const style = document.createElement('style');
+        style.textContent = `
+        @keyframes slideIn {
+                from { transform: translateX(100 %); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+        }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(feedback);
+        
+        // Supprimer après 3 secondes
+        setTimeout(() => {
+            if (feedback.parentNode) {
+                feedback.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => {
+                    if (feedback.parentNode) {
+                        feedback.parentNode.removeChild(feedback);
+                    }
+                }, 300);
+            }
+        }, 3000);
+    }
+
     async transcribeWithServer(audioBlob) {
         try {
             console.log('📤 Envoi chunk audio vers serveur...');
-
+            
             const formData = new FormData();
             formData.append('audio', audioBlob);
             formData.append('session_id', window.sessionId);
@@ -566,7 +616,7 @@ class FallbackRecognitionManager {
                 }
             });
 
-            console.log(`📡 Réponse serveur: ${response.status}`);
+            console.log(`📡 Réponse serveur: ${ response.status } `);
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -588,6 +638,10 @@ class FallbackRecognitionManager {
             if (result.success && result.transcript && result.transcript.trim()) {
                 const transcript = result.transcript.trim();
                 console.log('📝 Transcription serveur:', transcript);
+                
+                // ✅ FEEDBACK VISUEL Firefox (comme Chrome)
+                this.showVisualFeedback(transcript);
+                
                 this.handleSpeechResult(transcript);
             } else if (result.success && result.fallback) {
                 console.log('🦊 Firefox : Fallback activé - transcription vide ignorée');
@@ -655,7 +709,7 @@ class FallbackRecognitionManager {
 
                 if (result.is_complete) {
                     setTimeout(() => {
-                        window.location.href = `/resultat/${window.sessionId}`;
+                        window.location.href = `/ resultat / ${ window.sessionId } `;
                     }, 1500);
                 } else if (result.next_question && window.questionnaireManager) {
                     setTimeout(() => {
@@ -713,23 +767,23 @@ class FallbackRecognitionManager {
         const notification = document.createElement('div');
         notification.className = 'success-notification';
         notification.innerHTML = `
-            <div class="notification-content">
+            < div class="notification-content" >
                 <i class="fas fa-check-circle"></i>
                 <span>${message}</span>
-            </div>
-        `;
+            </div >
+            `;
 
         notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear - gradient(135deg, #56ab2f 0 %, #a8e063 100 %);
+        color: white;
+        padding: 1rem 1.5rem;
+        border - radius: 8px;
+        box - shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z - index: 1000;
+        animation: slideIn 0.3s ease - out;
         `;
 
         document.body.appendChild(notification);
@@ -743,23 +797,23 @@ class FallbackRecognitionManager {
         const notification = document.createElement('div');
         notification.className = 'error-notification';
         notification.innerHTML = `
-            <div class="notification-content">
+            < div class="notification-content" >
                 <i class="fas fa-exclamation-triangle"></i>
                 <span>${message}</span>
-            </div>
-        `;
+            </div >
+            `;
 
         notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear - gradient(135deg, #eb3349 0 %, #f45c43 100 %);
+        color: white;
+        padding: 1rem 1.5rem;
+        border - radius: 8px;
+        box - shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z - index: 1000;
+        animation: slideIn 0.3s ease - out;
         `;
 
         document.body.appendChild(notification);

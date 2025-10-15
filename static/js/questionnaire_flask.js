@@ -288,10 +288,10 @@ class QuestionnaireManager {
                 this.currentAudio = new Audio(audioUrl);
 
                 // ============================================
-                // 🚀 ACCÉLÉRATION AUDIO DE 15%
+                // 🚀 ACCÉLÉRATION AUDIO DE 20%
                 // ============================================
-                this.currentAudio.playbackRate = 1.15;
-                console.log('🚀 Vitesse de lecture: 1.15x (accélération de 15%)');
+                this.currentAudio.playbackRate = 1.2;
+                console.log('🚀 Vitesse de lecture: 1.2x (accélération de 20%)');
                 // ============================================
 
                 this.currentAudio.onerror = (e) => {

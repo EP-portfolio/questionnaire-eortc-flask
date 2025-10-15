@@ -676,6 +676,10 @@ def transcribe_chunk():
     """
     print("🔍 DEBUG: transcribe_chunk appelé - Version mise à jour")
     try:
+        # ✅ PROTECTION : Limiter la taille des chunks
+        if request.content_length and request.content_length > 10 * 1024 * 1024:  # 10MB max
+            print("❌ DEBUG: Chunk trop volumineux")
+            return jsonify({"error": "Chunk too large"}), 413
         audio_file = request.files.get("audio")
         print(f"🔍 DEBUG: audio_file reçu: {audio_file is not None}")
 
@@ -779,4 +783,13 @@ def transcribe_chunk():
         import traceback
 
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        
+        # ✅ FALLBACK ROBUSTE : Retourner une réponse vide au lieu d'erreur 500
+        print("🛡️ Protection : Retour fallback au lieu d'erreur 500")
+        return jsonify(
+            {
+                "success": True,
+                "transcript": "",  # Transcription vide pour éviter réponse automatique
+                "fallback": True,
+            }
+        )
