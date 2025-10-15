@@ -752,7 +752,7 @@ def transcribe_chunk():
             )
 
         result = response.json()
-        print(f"🔍 DEBUG: Réponse Google Cloud: {result}")
+        print(f"🔍 DEBUG: Réponse Google Cloud complète: {result}")
 
         # ✅ VÉRIFIER la structure de la réponse
         transcript = ""
@@ -762,6 +762,7 @@ def transcribe_chunk():
             return jsonify({"success": True, "transcript": transcript})
         else:
             print(f"⚠️ DEBUG: Aucun résultat dans la réponse: {result}")
+            print(f"⚠️ DEBUG: Structure de la réponse: {list(result.keys())}")
             # ✅ FALLBACK : Si pas de résultat, retourner une transcription vide
             print("🦊 Firefox : Pas de résultat - Mode fallback activé")
             return jsonify(
