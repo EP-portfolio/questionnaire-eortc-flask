@@ -213,8 +213,13 @@
         if (audioCheckbox) {
             audioCheckbox.addEventListener('change', function () {
                 audioConfirmed = this.checked;
+                console.log('✅ Case audio cochée - audioConfirmed:', audioConfirmed);
                 checkQ0ContinueButton();
             });
+
+            // ✅ AMÉLIORATION : Vérifier l'état initial
+            audioConfirmed = audioCheckbox.checked;
+            console.log('🔍 État initial case audio:', audioConfirmed);
         }
     });
 
@@ -229,6 +234,22 @@
         setTimeout(() => {
             playQuestion0Audio();
         }, 500);
+
+        // ✅ AMÉLIORATION : Vérification périodique du bouton
+        const checkInterval = setInterval(() => {
+            if (audioConfirmed && microTested) {
+                console.log('✅ Vérification périodique - Bouton activé');
+                clearInterval(checkInterval);
+            } else {
+                console.log('⏳ Vérification périodique - audioConfirmed:', audioConfirmed, 'microTested:', microTested);
+                checkQ0ContinueButton();
+            }
+        }, 2000); // Vérifier toutes les 2 secondes
+
+        // Arrêter la vérification après 30 secondes
+        setTimeout(() => {
+            clearInterval(checkInterval);
+        }, 30000);
     }
 
     async function playQuestion0Audio() {
@@ -454,6 +475,7 @@
 
                 showTestResult('micro-result');
                 microTested = true;
+                console.log('✅ Test micro réussi - microTested:', microTested);
 
                 setTimeout(() => {
                     window.fallbackManager.stopContinuousSpeech();
@@ -461,6 +483,9 @@
                     btn.style.background = '#4CAF50';
                     btn.disabled = true;
                     isRecording = false;
+
+                    // ✅ AMÉLIORATION : Vérifier immédiatement le bouton
+                    console.log('🔍 Vérification bouton après test micro');
                     checkQ0ContinueButton();
 
                     // ✅ REDÉMARRER Firefox après le test micro
@@ -574,10 +599,15 @@
 
     function checkQ0ContinueButton() {
         const btn = document.getElementById('q0-continue-btn');
+        console.log('🔍 checkQ0ContinueButton - audioConfirmed:', audioConfirmed, 'microTested:', microTested);
+
         if (audioConfirmed && microTested) {
             btn.disabled = false;
             btn.style.cursor = 'pointer';
             btn.style.opacity = '1';
+            console.log('✅ Bouton Q0 activé - Prêt à continuer');
+        } else {
+            console.log('⏳ Bouton Q0 en attente - audioConfirmed:', audioConfirmed, 'microTested:', microTested);
         }
     }
 

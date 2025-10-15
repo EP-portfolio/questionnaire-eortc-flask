@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Question 0 - Validation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .test-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn.danger {
+            background: #f44336;
+        }
+
+        .btn.danger:hover {
+            background: #d32f2f;
+        }
+
+        .btn.warning {
+            background: #FF9800;
+        }
+
+        .btn.warning:hover {
+            background: #F57C00;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #4CAF50;
+        }
+
+        .status.error {
+            background: #f44336;
+        }
+
+        .status.info {
+            background: #2196F3;
+        }
+
+        .status.warning {
+            background: #FF9800;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .test-steps {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .test-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .test-steps li {
+            margin: 5px 0;
+        }
+
+        .simulation-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            transform: scale(1.5);
+        }
+
+        .checkbox-container label {
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>🎯 Test Question 0 - Validation</h1>
+
+        <div class="test-section">
+            <h2>🎯 Problème à Résoudre</h2>
+            <div class="status warning">
+                <strong>Problème Question 0 :</strong> Audio détecté (petit signet visible) mais impossible de valider
+                et passer à la question 1 pendant la lecture audio.
+            </div>
+            <div class="simulation-box">
+                <h4>📱 Simulation du Problème :</h4>
+                <p>1. Question 0 en cours de lecture → Interface bloquée</p>
+                <p>2. Audio détecté → Petit signet apparaît</p>
+                <p>3. ❌ Bouton "Continuer" reste désactivé</p>
+                <p>4. ✅ Solution : Interface réactive pendant audio</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Test de Validation Question 0</h2>
+            <div class="test-steps">
+                <h4>Étapes de test :</h4>
+                <ol>
+                    <li>Cocher la case "Audio confirmé"</li>
+                    <li>Simuler la détection audio (test micro)</li>
+                    <li>Vérifier que le bouton "Continuer" s'active</li>
+                    <li>Tester la validation complète</li>
+                </ol>
+            </div>
+
+            <!-- Simulation de la Question 0 -->
+            <div class="simulation-box">
+                <h3>📋 Simulation Question 0</h3>
+
+                <div class="checkbox-container">
+                    <input type="checkbox" id="audio-confirmed-test">
+                    <label for="audio-confirmed-test">✅ J'ai entendu l'audio de la question</label>
+                </div>
+
+                <button class="btn" id="test-micro-btn" onclick="simulateMicroTest()">
+                    🎤 Tester le microphone
+                </button>
+
+                <div id="micro-feedback"
+                    style="display: none; margin: 10px 0; padding: 10px; background: rgba(76, 175, 80, 0.2); border-radius: 5px;">
+                    <span id="micro-feedback-text">🎤 Parlez maintenant...</span>
+                </div>
+
+                <button class="btn" id="continue-btn" onclick="simulateContinue()" disabled
+                    style="width: 100%; margin-top: 20px;">
+                    🚀 Continuer vers la question 1
+                </button>
+            </div>
+
+            <div id="test-status" class="status info">
+                Prêt pour le test
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 État de la Validation</h2>
+            <div id="validation-state">
+                <p><strong>Audio confirmé:</strong> <span id="audio-confirmed-state">Non</span></p>
+                <p><strong>Micro testé:</strong> <span id="micro-tested-state">Non</span></p>
+                <p><strong>Bouton continuer:</strong> <span id="continue-button-state">Désactivé</span></p>
+                <p><strong>Dernière action:</strong> <span id="last-action">-</span></p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Logs de Test</h2>
+            <button class="btn" onclick="clearLogs()">🗑️ Effacer</button>
+            <div id="test-log" class="log">
+                Logs de test apparaîtront ici...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioConfirmed = false;
+        let microTested = false;
+
+        function addLog(message) {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('test-log').textContent = 'Logs effacés...\n';
+        }
+
+        function updateState() {
+            document.getElementById('audio-confirmed-state').textContent = audioConfirmed ? 'Oui' : 'Non';
+            document.getElementById('micro-tested-state').textContent = microTested ? 'Oui' : 'Non';
+            document.getElementById('continue-button-state').textContent =
+                (audioConfirmed && microTested) ? 'Activé' : 'Désactivé';
+        }
+
+        function checkContinueButton() {
+            const btn = document.getElementById('continue-btn');
+            const status = document.getElementById('test-status');
+
+            console.log('🔍 checkContinueButton - audioConfirmed:', audioConfirmed, 'microTested:', microTested);
+            addLog(`🔍 Vérification bouton - audioConfirmed: ${audioConfirmed}, microTested: ${microTested}`);
+
+            if (audioConfirmed && microTested) {
+                btn.disabled = false;
+                btn.style.cursor = 'pointer';
+                btn.style.opacity = '1';
+                status.textContent = '✅ Bouton activé - Prêt à continuer';
+                status.className = 'status success';
+                addLog('✅ Bouton continuer activé');
+            } else {
+                btn.disabled = true;
+                btn.style.cursor = 'not-allowed';
+                btn.style.opacity = '0.5';
+                status.textContent = '⏳ En attente - Audio et micro requis';
+                status.className = 'status warning';
+                addLog('⏳ Bouton continuer en attente');
+            }
+
+            updateState();
+        }
+
+        function simulateMicroTest() {
+            addLog('🎤 Simulation test microphone');
+
+            const btn = document.getElementById('test-micro-btn');
+            const feedback = document.getElementById('micro-feedback');
+            const feedbackText = document.getElementById('micro-feedback-text');
+
+            btn.innerHTML = '🔴 Enregistrement...';
+            btn.disabled = true;
+            feedback.style.display = 'block';
+            feedbackText.textContent = '🎤 Parlez maintenant...';
+
+            // Simuler la détection audio après 2 secondes
+            setTimeout(() => {
+                feedbackText.textContent = '✅ Message capté : "Test microphone"';
+                feedbackText.style.color = '#4CAF50';
+                microTested = true;
+                addLog('✅ Test microphone simulé - microTested: true');
+
+                btn.innerHTML = '✅ Testé';
+                btn.style.background = '#4CAF50';
+                btn.disabled = true;
+
+                document.getElementById('last-action').textContent = 'Test microphone simulé';
+                checkContinueButton();
+            }, 2000);
+        }
+
+        function simulateContinue() {
+            addLog('🚀 Simulation continuation vers question 1');
+            document.getElementById('test-status').textContent = '✅ Continuation simulée - Test réussi';
+            document.getElementById('test-status').className = 'status success';
+            document.getElementById('last-action').textContent = 'Continuation vers Q1';
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function () {
+            addLog('📄 Test Question 0 validation chargé');
+
+            // Écouter la case à cocher
+            const audioCheckbox = document.getElementById('audio-confirmed-test');
+            if (audioCheckbox) {
+                audioCheckbox.addEventListener('change', function () {
+                    audioConfirmed = this.checked;
+                    addLog(`✅ Case audio cochée - audioConfirmed: ${audioConfirmed}`);
+                    document.getElementById('last-action').textContent = 'Case audio cochée';
+                    checkContinueButton();
+                });
+            }
+
+            // Vérification périodique
+            const checkInterval = setInterval(() => {
+                if (audioConfirmed && microTested) {
+                    addLog('✅ Vérification périodique - Bouton activé');
+                    clearInterval(checkInterval);
+                } else {
+                    addLog('⏳ Vérification périodique - En attente');
+                    checkContinueButton();
+                }
+            }, 2000);
+
+            // Arrêter la vérification après 30 secondes
+            setTimeout(() => {
+                clearInterval(checkInterval);
+            }, 30000);
+
+            updateState();
+            addLog('✅ Test prêt - Cochez la case et testez le micro');
+        });
+    </script>
+</body>
+
+</html>

@@ -439,29 +439,56 @@ class FallbackRecognitionManager {
     pauseRecognition() {
         console.log('⏸️ Reconnaissance mise en pause (fallback)');
         this.isPaused = true;
+
+        // ✅ FIREFOX : Log pour debug
+        console.log('🦊 Firefox : État pause activé - isListening:', this.isListening);
     }
 
     resumeRecognition() {
         console.log('▶️ Reconnaissance reprise (fallback)');
         this.isPaused = false;
+
+        // ✅ FIREFOX : Vérifier si on doit redémarrer l'écoute
+        if (!this.isListening) {
+            console.log('🦊 Firefox : Redémarrage nécessaire après reprise');
+            this.startContinuousSpeech();
+        } else {
+            console.log('🦊 Firefox : Écoute déjà active, reprise simple');
+        }
     }
 
     // ✅ NOUVEAU : Gestion intelligente de l'arrêt audio pour Firefox uniquement
     handleAudioStop() {
         console.log('🔇 Audio arrêté - Gestion Firefox (logique spécifique)');
 
-        // ✅ LOGIQUE FIREFOX UNIQUEMENT : Arrêter et redémarrer proprement
+        // ✅ FIREFOX : Gestion spéciale des états en pause
+        if (this.isPaused) {
+            console.log('🦊 Firefox : Reprise depuis pause (audio arrêté)');
+            this.isPaused = false;
+            // Si déjà en écoute, juste reprendre
+            if (this.isListening) {
+                console.log('🦊 Firefox : Écoute déjà active, reprise simple');
+                return;
+            }
+        }
+
+        // ✅ LOGIQUE FIREFOX : Arrêter et redémarrer proprement
         if (this.mediaRecorder && this.isListening) {
             console.log('🦊 Firefox : Arrêt pour audio (logique Firefox)');
 
             // Arrêter proprement
             this.stopContinuousSpeech();
 
-            // ✅ FIREFOX : Redémarrage simple et direct
+            // ✅ FIREFOX : Redémarrage immédiat pour éviter la pause
             setTimeout(() => {
-                console.log('🦊 Firefox : Redémarrage après arrêt audio');
+                console.log('🦊 Firefox : Redémarrage immédiat après arrêt audio');
+                this.isPaused = false; // S'assurer qu'on n'est pas en pause
                 this.startContinuousSpeech();
-            }, 1500); // 1.5 secondes pour Firefox
+            }, 500); // Réduire à 0.5 seconde pour plus de réactivité
+        } else if (!this.isListening) {
+            console.log('🦊 Firefox : Redémarrage direct (pas d\'arrêt nécessaire)');
+            this.isPaused = false;
+            this.startContinuousSpeech();
         } else {
             console.log('🦊 Firefox : Pas de MediaRecorder actif');
         }
@@ -590,8 +617,8 @@ class FallbackRecognitionManager {
             }
             const rms = Math.sqrt(sum / length);
 
-            // Seuil de détection de parole (ajustable)
-            const speechThreshold = 0.01;
+            // ✅ AMÉLIORATION : Seuil plus sensible pour question 0
+            const speechThreshold = 0.005; // Réduire de 0.01 à 0.005
             const hasSpeech = rms > speechThreshold;
 
             console.log(`🔍 DEBUG: RMS audio: ${rms.toFixed(4)}, Seuil: ${speechThreshold}, Parole: ${hasSpeech}`);

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Firefox - Pause/Reprise Audio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .test-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn.danger {
+            background: #f44336;
+        }
+
+        .btn.danger:hover {
+            background: #d32f2f;
+        }
+
+        .btn.warning {
+            background: #FF9800;
+        }
+
+        .btn.warning:hover {
+            background: #F57C00;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #4CAF50;
+        }
+
+        .status.error {
+            background: #f44336;
+        }
+
+        .status.info {
+            background: #2196F3;
+        }
+
+        .status.warning {
+            background: #FF9800;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .test-steps {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .test-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .test-steps li {
+            margin: 5px 0;
+        }
+
+        .simulation-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>🦊 Test Firefox - Pause/Reprise Audio</h1>
+
+        <div class="test-section">
+            <h2>🎯 Problème à Résoudre</h2>
+            <div class="status warning">
+                <strong>Problème Firefox :</strong> L'écoute du micro reste en pause après avoir cliqué "Arrêter
+                l'audio" pendant la lecture d'une question.
+            </div>
+            <div class="simulation-box">
+                <h4>📱 Simulation du Problème :</h4>
+                <p>1. Question en cours de lecture → Micro en pause</p>
+                <p>2. Clic "Arrêter l'audio" → Audio s'arrête</p>
+                <p>3. ❌ Micro reste en pause → Pas de reconnaissance</p>
+                <p>4. ✅ Solution : Micro doit reprendre automatiquement</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Test de Simulation</h2>
+            <div class="test-steps">
+                <h4>Étapes de test :</h4>
+                <ol>
+                    <li>Démarrer la reconnaissance vocale</li>
+                    <li>Simuler la lecture d'une question (pause micro)</li>
+                    <li>Simuler l'arrêt audio</li>
+                    <li>Vérifier que le micro reprend automatiquement</li>
+                    <li>Tester la détection audio (question 0)</li>
+                </ol>
+            </div>
+
+            <button class="btn" id="start-test" onclick="startTest()">
+                🎤 Démarrer Test
+            </button>
+            <button class="btn warning" id="simulate-question" onclick="simulateQuestionPlayback()" disabled>
+                📢 Simuler Lecture Question
+            </button>
+            <button class="btn danger" id="simulate-audio-stop" onclick="simulateAudioStop()" disabled>
+                🔇 Simuler Arrêt Audio
+            </button>
+            <button class="btn" id="test-detection" onclick="testAudioDetection()" disabled>
+                🎯 Test Détection Audio
+            </button>
+
+            <div id="test-status" class="status info">
+                Prêt pour le test
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 État de la Reconnaissance</h2>
+            <div id="recognition-state">
+                <p><strong>État:</strong> <span id="state-value">Arrêté</span></p>
+                <p><strong>En pause:</strong> <span id="paused-value">Non</span></p>
+                <p><strong>MediaRecorder:</strong> <span id="mediarecorder-state">Inactif</span></p>
+                <p><strong>Dernière action:</strong> <span id="last-action">-</span></p>
+                <p><strong>Transcriptions reçues:</strong> <span id="transcript-count">0</span></p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Logs de Test</h2>
+            <button class="btn" onclick="clearLogs()">🗑️ Effacer</button>
+            <div id="test-log" class="log">
+                Logs de test apparaîtront ici...
+            </div>
+        </div>
+    </div>
+
+    <!-- Inclure le script de reconnaissance vocale -->
+    <script src="static/js/speech_recognition_flask.js"></script>
+
+    <script>
+        let isTestActive = false;
+        let transcriptions = [];
+        let isQuestionPlaying = false;
+
+        function addLog(message) {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('test-log').textContent = 'Logs effacés...\n';
+        }
+
+        function updateState() {
+            if (window.fallbackManager) {
+                document.getElementById('state-value').textContent = window.fallbackManager.isListening ? 'Actif' : 'Arrêté';
+                document.getElementById('paused-value').textContent = window.fallbackManager.isPaused ? 'Oui' : 'Non';
+                document.getElementById('mediarecorder-state').textContent =
+                    window.fallbackManager.mediaRecorder ? window.fallbackManager.mediaRecorder.state : 'Inactif';
+            } else {
+                document.getElementById('state-value').textContent = 'Manager non disponible';
+                document.getElementById('paused-value').textContent = 'Inconnu';
+                document.getElementById('mediarecorder-state').textContent = 'Inactif';
+            }
+
+            document.getElementById('transcript-count').textContent = transcriptions.length;
+        }
+
+        function startTest() {
+            addLog('🎤 Démarrage test Firefox');
+
+            if (window.fallbackManager) {
+                window.fallbackManager.startContinuousSpeech();
+                document.getElementById('test-status').textContent = '✅ Reconnaissance active - Test prêt';
+                document.getElementById('test-status').className = 'status success';
+
+                document.getElementById('start-test').disabled = true;
+                document.getElementById('simulate-question').disabled = false;
+                document.getElementById('test-detection').disabled = false;
+
+                isTestActive = true;
+                addLog('✅ Test démarré - Reconnaissance active');
+            } else {
+                addLog('❌ FallbackManager non disponible');
+                document.getElementById('test-status').textContent = '❌ Erreur - Manager non disponible';
+                document.getElementById('test-status').className = 'status error';
+            }
+
+            updateState();
+        }
+
+        function simulateQuestionPlayback() {
+            addLog('📢 Simulation lecture question (pause micro)');
+
+            if (window.fallbackManager) {
+                // Simuler la pause pendant la lecture
+                window.fallbackManager.pauseRecognition();
+                isQuestionPlaying = true;
+
+                document.getElementById('test-status').textContent = '📢 Question en cours - Micro en pause';
+                document.getElementById('test-status').className = 'status warning';
+                document.getElementById('last-action').textContent = 'Lecture question simulée';
+
+                document.getElementById('simulate-question').disabled = true;
+                document.getElementById('simulate-audio-stop').disabled = false;
+
+                addLog('✅ Micro mis en pause (simulation lecture)');
+            }
+
+            updateState();
+        }
+
+        function simulateAudioStop() {
+            addLog('🔇 Simulation arrêt audio');
+
+            if (window.fallbackManager && window.handleAudioStop) {
+                window.handleAudioStop();
+                isQuestionPlaying = false;
+
+                document.getElementById('test-status').textContent = '🔇 Audio arrêté - Vérification reprise...';
+                document.getElementById('test-status').className = 'status warning';
+                document.getElementById('last-action').textContent = 'Arrêt audio simulé';
+
+                document.getElementById('simulate-audio-stop').disabled = true;
+
+                addLog('✅ Arrêt audio simulé - Vérification reprise...');
+
+                // Vérifier la reprise après 2 secondes
+                setTimeout(() => {
+                    if (window.fallbackManager && window.fallbackManager.isListening && !window.fallbackManager.isPaused) {
+                        addLog('✅ SUCCÈS : Micro reprend automatiquement');
+                        document.getElementById('test-status').textContent = '✅ Micro reprend automatiquement - Test réussi';
+                        document.getElementById('test-status').className = 'status success';
+                    } else {
+                        addLog('❌ ÉCHEC : Micro ne reprend pas');
+                        document.getElementById('test-status').textContent = '❌ Micro ne reprend pas - Test échoué';
+                        document.getElementById('test-status').className = 'status error';
+                    }
+                    updateState();
+                }, 2000);
+            } else {
+                addLog('❌ handleAudioStop non disponible');
+                document.getElementById('test-status').textContent = '❌ Erreur - handleAudioStop manquant';
+                document.getElementById('test-status').className = 'status error';
+            }
+        }
+
+        function testAudioDetection() {
+            addLog('🎯 Test détection audio (question 0)');
+
+            // Simuler un test de détection audio
+            const testAudio = new Blob(['test audio data'], { type: 'audio/wav' });
+
+            if (window.fallbackManager && window.fallbackManager.detectSpeech) {
+                window.fallbackManager.detectSpeech(testAudio).then(hasSpeech => {
+                    if (hasSpeech) {
+                        addLog('✅ Détection audio : Parole détectée');
+                        document.getElementById('test-status').textContent = '✅ Détection audio fonctionne';
+                        document.getElementById('test-status').className = 'status success';
+                    } else {
+                        addLog('⚠️ Détection audio : Pas de parole détectée');
+                        document.getElementById('test-status').textContent = '⚠️ Détection audio : Pas de parole';
+                        document.getElementById('test-status').className = 'status warning';
+                    }
+                }).catch(error => {
+                    addLog('❌ Erreur détection audio : ' + error);
+                    document.getElementById('test-status').textContent = '❌ Erreur détection audio';
+                    document.getElementById('test-status').className = 'status error';
+                });
+            } else {
+                addLog('❌ Méthode detectSpeech non disponible');
+                document.getElementById('test-status').textContent = '❌ Erreur - detectSpeech manquant';
+                document.getElementById('test-status').className = 'status error';
+            }
+        }
+
+        // Intercepter les transcriptions
+        function interceptTranscriptions() {
+            if (window.fallbackManager) {
+                const originalProcessVoiceResponse = window.fallbackManager.processVoiceResponse;
+                window.fallbackManager.processVoiceResponse = function (transcript) {
+                    addLog(`📝 Transcription reçue: "${transcript}"`);
+                    transcriptions.push(transcript);
+                    document.getElementById('last-action').textContent = `Transcription: "${transcript}"`;
+                    updateState();
+                    if (originalProcessVoiceResponse) {
+                        originalProcessVoiceResponse.call(this, transcript);
+                    }
+                };
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function () {
+            addLog('📄 Test Firefox pause/reprise chargé');
+
+            // Attendre l'initialisation des managers
+            setTimeout(() => {
+                addLog('🔧 Initialisation des managers');
+                if (window.initSpeechRecognition) {
+                    window.initSpeechRecognition();
+                }
+
+                // Intercepter les transcriptions
+                interceptTranscriptions();
+
+                updateState();
+                addLog('✅ Test prêt - Commencez par "Démarrer Test"');
+            }, 1000);
+        });
+    </script>
+</body>
+
+</html>
