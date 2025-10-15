@@ -212,14 +212,11 @@ class EORTCQuestionnaire:
         if not question:
             return ""
 
-        # Question 0 spéciale
+        # Question 0 spéciale - VERSION COURTE pour éviter timeout
         if question_num == 0:
-            return """Question zéro. Tests audio et microphone.
-            Cliquez sur le bouton pour tester l'audio. Si vous entendez ce message, l'audio fonctionne correctement.
-            Ensuite, cochez la case pour confirmer que vous avez entendu le test.
-            Puis, testez votre microphone en cliquant sur le bouton de test microphone.
-            Parlez clairement et attendez deux secondes. Une fois les deux tests validés, vous pourrez continuer.
-            L'écoute continue sera alors activée pour les questions suivantes."""
+            return """Question zéro. Tests audio et microphone. 
+            Si vous entendez ce message, l'audio fonctionne correctement. 
+            Cochez la case, puis testez le microphone en parlant clairement."""
 
         speech_text = f"Question {question_num}. {question['text']}"
 
