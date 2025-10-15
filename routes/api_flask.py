@@ -706,8 +706,8 @@ def transcribe_chunk():
 
         if not api_key:
             print("❌ DEBUG: Clé API Google Cloud manquante")
-            # ✅ FALLBACK : Retourner une transcription vide pour Firefox
-            print("🦊 Firefox : Mode fallback - transcription vide")
+            # ✅ FALLBACK : Retourner une transcription vide pour tous les navigateurs
+            print("🌐 Tous navigateurs : Mode fallback - transcription vide")
             return jsonify(
                 {
                     "success": True,
@@ -742,7 +742,7 @@ def transcribe_chunk():
             print(f"❌ DEBUG: Réponse: {response.text}")
 
             # ✅ FALLBACK : Pour toutes les erreurs API, retourner transcription vide
-            print("🦊 Firefox : Erreur API - Mode fallback activé")
+            print("🌐 Tous navigateurs : Erreur API - Mode fallback activé")
             return jsonify(
                 {
                     "success": True,
@@ -764,7 +764,7 @@ def transcribe_chunk():
             print(f"⚠️ DEBUG: Aucun résultat dans la réponse: {result}")
             print(f"⚠️ DEBUG: Structure de la réponse: {list(result.keys())}")
             # ✅ FALLBACK : Si pas de résultat, retourner une transcription vide
-            print("🦊 Firefox : Pas de résultat - Mode fallback activé")
+            print("🌐 Tous navigateurs : Pas de résultat - Mode fallback activé")
             return jsonify(
                 {
                     "success": True,
