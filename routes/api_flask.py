@@ -671,7 +671,7 @@ def get_result_audio_dynamic(session_id):
 def transcribe_chunk():
     """
     Transcrit un chunk audio (pour Firefox/Safari)
-    Utilise faster-whisper (plus rapide, plus léger, gratuit)
+    Utilise faster-whisper (version corrigée pour Python 3.13)
     """
     try:
         audio_file = request.files.get("audio")
@@ -679,15 +679,30 @@ def transcribe_chunk():
         if not audio_file:
             return jsonify({"error": "No audio"}), 400
 
-        # ✅ Utiliser faster-whisper (plus rapide et léger)
+        # ✅ Utiliser faster-whisper (version corrigée)
         from faster_whisper import WhisperModel
         import tempfile
+        import os
 
         # Charger le modèle (mettre en cache global pour ne charger qu'une fois)
         if not hasattr(current_app, "whisper_model"):
             print("📥 Chargement modèle faster-whisper 'tiny' (une seule fois)...")
-            current_app.whisper_model = WhisperModel("tiny", device="cpu")
-            print("✅ Modèle faster-whisper chargé")
+            try:
+                # ✅ CORRECTION : Désactiver tqdm pour éviter l'erreur _lock
+                import faster_whisper
+
+                faster_whisper.utils.tqdm = lambda *args, **kwargs: None
+
+                current_app.whisper_model = WhisperModel(
+                    "tiny",
+                    device="cpu",
+                    compute_type="int8",  # Plus léger en mémoire
+                    cpu_threads=1,  # Limiter l'utilisation CPU
+                )
+                print("✅ Modèle faster-whisper chargé")
+            except Exception as model_error:
+                print(f"❌ Erreur chargement modèle: {model_error}")
+                return jsonify({"error": "Model loading failed"}), 500
 
         # Sauvegarder temporairement
         with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
@@ -695,13 +710,15 @@ def transcribe_chunk():
             temp_path = tmp.name
 
         try:
-            # Transcription avec faster-whisper
+            # Transcription avec faster-whisper (paramètres optimisés)
             segments, info = current_app.whisper_model.transcribe(
                 temp_path,
                 language="fr",
                 beam_size=1,  # Plus rapide
                 best_of=1,  # Plus rapide
                 temperature=0.0,  # Plus déterministe
+                vad_filter=True,  # Filtre de détection de voix
+                vad_parameters=dict(min_silence_duration_ms=500),  # Éviter les silences
             )
 
             # Extraire le texte (faster-whisper retourne des segments)
