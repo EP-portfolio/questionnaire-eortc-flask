@@ -676,8 +676,10 @@ def transcribe_chunk():
     print("🔍 DEBUG: transcribe_chunk appelé - Version mise à jour")
     try:
         audio_file = request.files.get("audio")
+        print(f"🔍 DEBUG: audio_file reçu: {audio_file is not None}")
 
         if not audio_file:
+            print("❌ DEBUG: Pas de fichier audio")
             return jsonify({"error": "No audio"}), 400
 
         # ✅ Utiliser Google Cloud Speech-to-Text (même API que TTS)
@@ -685,16 +687,20 @@ def transcribe_chunk():
 
         # Lire le contenu audio
         audio_content = audio_file.read()
+        print(f"🔍 DEBUG: Taille audio: {len(audio_content)} bytes")
 
         # Encoder en base64 pour l'API
         audio_base64 = base64.b64encode(audio_content).decode("utf-8")
+        print(f"🔍 DEBUG: Audio encodé en base64: {len(audio_base64)} caractères")
 
         # Récupérer la clé API (même que pour TTS)
         api_key = current_app.config.get("GOOGLE_CLOUD_API_KEY") or os.environ.get(
             "GOOGLE_CLOUD_API_KEY"
         )
+        print(f"🔍 DEBUG: Clé API présente: {api_key is not None}")
 
         if not api_key:
+            print("❌ DEBUG: Clé API Google Cloud manquante")
             return jsonify({"error": "Google Cloud API key not configured"}), 500
 
         # Appel API Google Cloud Speech-to-Text
