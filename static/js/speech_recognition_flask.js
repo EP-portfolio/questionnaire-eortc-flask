@@ -728,8 +728,17 @@ function startRecording() {
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function () {
+    // ✅ DÉTECTION AUTOMATIQUE du navigateur
+    const isWebSpeechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     const browserType = localStorage.getItem('browser_type');
-    const isWebSpeechMode = browserType === 'chrome';
+    
+    // Priorité à la détection automatique, fallback sur localStorage
+    const isWebSpeechMode = isWebSpeechSupported || browserType === 'chrome';
+
+    console.log('🔍 Détection navigateur:');
+    console.log('  - Web Speech API supportée:', isWebSpeechSupported);
+    console.log('  - browser_type localStorage:', browserType);
+    console.log('  - Mode choisi:', isWebSpeechMode ? 'Chrome (Web Speech)' : 'Firefox (Fallback)');
 
     if (isWebSpeechMode) {
         speechManager = new SpeechRecognitionManager();
@@ -755,6 +764,9 @@ document.addEventListener('DOMContentLoaded', function () {
             speechManager.init();
         } else if (fallbackManager) {
             fallbackManager.init();
+            // ✅ Firefox : Démarrer automatiquement l'écoute continue
+            console.log('🚀 Firefox : Démarrage automatique de l\'écoute continue');
+            fallbackManager.startContinuousSpeech();
         }
     };
 });
