@@ -303,6 +303,52 @@
 
         console.log('Démarrage enregistrement');
 
+        // ✅ UTILISER LE SYSTÈME UNIFIÉ (speech_recognition_flask.js)
+        if (window.fallbackManager) {
+            console.log('🎤 Firefox : Utilisation du FallbackRecognitionManager');
+
+            // Simuler l'interface de test pour Firefox
+            const btn = document.getElementById('recorder-btn');
+            const feedback = document.getElementById('recording-feedback');
+
+            btn.innerHTML = '<i class="fas fa-stop"></i><span>🔴 Parlez...</span>';
+            btn.style.background = '#f44336';
+            isRecording = true;
+
+            feedback.style.display = 'block';
+            feedback.querySelector('.feedback-text').textContent = '🎤 Parlez maintenant...';
+
+            // Démarrer l'écoute continue
+            window.fallbackManager.startContinuousSpeech();
+
+            // Écouter les résultats via le système unifié
+            const originalProcessVoiceResponse = window.fallbackManager.processVoiceResponse;
+            window.fallbackManager.processVoiceResponse = function (transcript) {
+                console.log('🎤 Firefox : Résultat reçu:', transcript);
+
+                feedback.querySelector('.feedback-text').textContent = '✅ Message capté : "' + transcript + '"';
+                feedback.querySelector('.feedback-text').style.color = '#4CAF50';
+
+                showTestResult('micro-result');
+                microTested = true;
+
+                setTimeout(() => {
+                    window.fallbackManager.stopContinuousSpeech();
+                    btn.innerHTML = '<i class="fas fa-check"></i><span>✅ Testé</span>';
+                    btn.style.background = '#4CAF50';
+                    btn.disabled = true;
+                    isRecording = false;
+                    checkQ0ContinueButton();
+                }, 1500);
+
+                // Restaurer la fonction originale
+                window.fallbackManager.processVoiceResponse = originalProcessVoiceResponse;
+            };
+
+            return;
+        }
+
+        // ✅ Fallback pour Chrome (Web Speech API)
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             alert('Erreur : La reconnaissance vocale n\'est pas disponible.');
             return;

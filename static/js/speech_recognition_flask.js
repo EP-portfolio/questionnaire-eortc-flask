@@ -764,9 +764,8 @@ document.addEventListener('DOMContentLoaded', function () {
             speechManager.init();
         } else if (fallbackManager) {
             fallbackManager.init();
-            // ✅ Firefox : Démarrer automatiquement l'écoute continue
-            console.log('🚀 Firefox : Démarrage automatique de l\'écoute continue');
-            fallbackManager.startContinuousSpeech();
+            // ✅ Firefox : NE PAS démarrer automatiquement (laisser l'utilisateur contrôler)
+            console.log('🚀 Firefox : FallbackRecognitionManager initialisé (démarrage manuel)');
         }
     };
 });
