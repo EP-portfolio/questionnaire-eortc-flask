@@ -723,7 +723,7 @@ def transcribe_chunk():
         payload = {
             "config": {
                 "encoding": "WEBM_OPUS",
-                "sampleRateHertz": 16000,
+                "sampleRateHertz": 48000,  # ✅ CORRECTION : Fréquence WEBM OPUS
                 "languageCode": "fr-FR",
                 "model": "command_and_search",  # Optimisé pour réponses courtes
                 "enableAutomaticPunctuation": False,
