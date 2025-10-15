@@ -495,6 +495,73 @@ class FallbackRecognitionManager {
         }
 
         try {
+            // ✅ APPROCHE UNMUTE.SH : Utiliser Web Speech API côté client
+            console.log('🦊 Firefox : Utilisation de Web Speech API côté client');
+
+            // Créer un objet Audio pour analyser l'audio
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+
+            // ✅ UTILISER Web Speech API directement (comme unmute.sh)
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                await this.transcribeWithWebSpeech(audioBlob);
+            } else {
+                console.log('⚠️ Web Speech API non disponible, utilisation du serveur');
+                await this.transcribeWithServer(audioBlob);
+            }
+
+            // Nettoyer l'URL
+            URL.revokeObjectURL(audioUrl);
+
+        } catch (error) {
+            console.error('❌ Erreur transcription chunk:', error);
+        }
+    }
+
+    // ✅ NOUVELLE MÉTHODE : Transcription avec Web Speech API (approche unmute.sh)
+    async transcribeWithWebSpeech(audioBlob) {
+        return new Promise((resolve, reject) => {
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'fr-FR';
+                recognition.maxAlternatives = 1;
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript.trim();
+                    console.log('📝 Transcription Web Speech:', transcript);
+
+                    if (transcript) {
+                        this.handleSpeechResult(transcript);
+                    }
+                    resolve(transcript);
+                };
+
+                recognition.onerror = (error) => {
+                    console.error('❌ Erreur Web Speech:', error);
+                    reject(error);
+                };
+
+                recognition.onend = () => {
+                    console.log('✅ Web Speech terminé');
+                };
+
+                // Démarrer la reconnaissance
+                recognition.start();
+
+            } catch (error) {
+                console.error('❌ Erreur initialisation Web Speech:', error);
+                reject(error);
+            }
+        });
+    }
+
+    // ✅ MÉTHODE FALLBACK : Transcription avec serveur
+    async transcribeWithServer(audioBlob) {
+        try {
             const formData = new FormData();
             formData.append('audio', audioBlob);
             formData.append('session_id', window.sessionId);
@@ -514,14 +581,12 @@ class FallbackRecognitionManager {
 
             if (result.transcript && result.transcript.trim()) {
                 const transcript = result.transcript.trim();
-                console.log('📝 Transcription reçue:', transcript);
-
-                // ✅ Utiliser la même logique de traitement que Chrome
+                console.log('📝 Transcription serveur:', transcript);
                 this.handleSpeechResult(transcript);
             }
 
         } catch (error) {
-            console.error('❌ Erreur transcription chunk:', error);
+            console.error('❌ Erreur transcription serveur:', error);
         }
     }
 
