@@ -2,6 +2,7 @@
  * Logique principale du questionnaire Flask
  * Version corrigée avec audio automatique, logs détaillés et arrêt audio sur parole
  * + Accélération audio de 15%
+ * + Affichage correct du texte dans le cadre bleu
  */
 
 class QuestionnaireManager {
@@ -70,9 +71,9 @@ class QuestionnaireManager {
 
                 this.toggleSpecialMessage(questionNum >= 29);
 
-                console.log('🔊 Lancement automatique de l\'audio dans 1 seconde...');
+                console.log('📊 Lancement automatique de l\'audio dans 1 seconde...');
                 setTimeout(() => {
-                    console.log('🔊 Appel de playQuestionAudio()');
+                    console.log('📊 Appel de playQuestionAudio()');
                     this.playQuestionAudio();
                 }, 1000);
             } else {
@@ -88,22 +89,30 @@ class QuestionnaireManager {
     }
 
     displayQuestion(question) {
+        console.log('🔍 displayQuestion() appelé avec:', question);
+        
         const questionNumber = document.getElementById('question-number');
-        const questionText = document.getElementById('question-text');
-        const questionSpeech = document.getElementById('question-speech');
         const questionSpeechText = document.getElementById('question-speech-text');
 
+        // Mettre à jour le numéro de la question
         if (questionNumber) {
             questionNumber.textContent = `Question ${this.currentQuestion}`;
+            console.log('✅ Numéro de question mis à jour:', this.currentQuestion);
+        } else {
+            console.error('❌ Élément question-number non trouvé');
         }
 
-        if (questionText) {
-            questionText.textContent = question.text;
-        }
-
-        if (questionSpeech && questionSpeechText && question.speech_text) {
-            questionSpeechText.textContent = question.speech_text;
-            questionSpeech.style.display = 'block';
+        // ✅ CORRECTION : Afficher le texte dans le cadre bleu
+        if (questionSpeechText) {
+            if (question.speech_text) {
+                questionSpeechText.textContent = question.speech_text;
+                console.log('✅ Texte de la question affiché:', question.speech_text.substring(0, 50) + '...');
+            } else {
+                console.error('❌ speech_text manquant dans la question');
+                console.log('Question data:', question);
+            }
+        } else {
+            console.error('❌ Élément question-speech-text non trouvé');
         }
     }
 
@@ -223,7 +232,7 @@ class QuestionnaireManager {
 
     async playQuestionAudio() {
         try {
-            console.log(`🔊 DEBUG: Tentative de lecture audio pour question ${this.currentQuestion}`);
+            console.log(`📊 DEBUG: Tentative de lecture audio pour question ${this.currentQuestion}`);
 
             const statusText = document.getElementById('audio-status-text');
             if (statusText) {
@@ -233,15 +242,15 @@ class QuestionnaireManager {
 
             const response = await fetch(`/api/get_audio/${this.currentQuestion}`);
 
-            console.log(`🔊 DEBUG: Réponse serveur - Status: ${response.status}`);
+            console.log(`📊 DEBUG: Réponse serveur - Status: ${response.status}`);
 
             if (response.ok) {
-                console.log('🔊 DEBUG: Réponse OK, création du blob...');
+                console.log('📊 DEBUG: Réponse OK, création du blob...');
                 const audioBlob = await response.blob();
-                console.log(`🔊 DEBUG: Blob créé - Taille: ${audioBlob.size} bytes`);
+                console.log(`📊 DEBUG: Blob créé - Taille: ${audioBlob.size} bytes`);
 
                 const audioUrl = URL.createObjectURL(audioBlob);
-                console.log(`🔊 DEBUG: URL créée: ${audioUrl}`);
+                console.log(`📊 DEBUG: URL créée: ${audioUrl}`);
 
                 this.stopAudio();
 
