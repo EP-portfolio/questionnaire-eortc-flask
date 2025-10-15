@@ -58,6 +58,15 @@
                         J'accepte le traitement anonyme de mes données (RGPD)
                     </label>
                 </div>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="audio_consent" name="audio_consent" required>
+                        <span class="checkmark"></span>
+                        <i class="fas fa-volume-up"></i>
+                        J'autorise la lecture automatique des questions audio
+                    </label>
+                </div>
             </div>
 
             <div class="form-actions">
@@ -127,8 +136,9 @@
             const birthDate = document.getElementById('birth_date').value;
             const todayDate = document.getElementById('today_date').value;
             const consent = consentCheckbox.checked;
+            const audioConsent = document.getElementById('audio_consent').checked;
 
-            if (initials && birthDate && todayDate && consent) {
+            if (initials && birthDate && todayDate && consent && audioConsent) {
                 submitBtn.disabled = false;
                 submitBtn.classList.add('enabled');
             } else {
@@ -152,7 +162,8 @@
                 initials: formData.get('initials'),
                 birth_date: formData.get('birth_date'),
                 today_date: formData.get('today_date'),
-                audio_enabled: true,
+                audio_enabled: formData.get('audio_consent') === 'on',
+                audio_consent: formData.get('audio_consent') === 'on',
                 mode: 'Continu (Web Speech)'
             };
 
@@ -176,7 +187,12 @@
                         // Stocker l'ID de session
                         localStorage.setItem('session_id', result.session_id);
 
+                        // Stocker le consentement audio
+                        localStorage.setItem('audio_consent', 'true');
+                        localStorage.setItem('audio_enabled', 'true');
+
                         console.log('✅ Session créée:', result.session_id);
+                        console.log('✅ Consentement audio accordé');
 
                         // Rediriger vers le questionnaire (qui commencera par Q0)
                         window.location.href = `/questionnaire?session_id=${result.session_id}`;

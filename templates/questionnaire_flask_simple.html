@@ -217,7 +217,16 @@
     }
 
     async function playQuestion0Audio() {
-        console.log('🔊 Lecture automatique audio Q0 (pré-généré)');
+        // ✅ VÉRIFIER le consentement audio
+        const audioConsent = localStorage.getItem('audio_consent') === 'true';
+        if (!audioConsent) {
+            console.log('⚠️ Consentement audio non accordé - affichage du bouton de test');
+            // Afficher un bouton pour tester l'audio
+            showAudioTestButton();
+            return;
+        }
+
+        console.log('🔊 Lecture automatique audio Q0 (pré-généré) - Consentement accordé');
 
         try {
             // Charger l'audio pré-généré pour Q0
@@ -296,6 +305,28 @@
     function testMicrophone() {
         console.log('🎤 Test microphone');
         document.getElementById('microphone-test').style.display = 'block';
+    }
+
+    // Fonction pour afficher le bouton de test audio si pas de consentement
+    function showAudioTestButton() {
+        const audioConfirmation = document.getElementById('audio-confirmation');
+        if (audioConfirmation) {
+            // Ajouter un bouton de test audio
+            const testButton = document.createElement('button');
+            testButton.type = 'button';
+            testButton.className = 'btn btn-primary btn-lg';
+            testButton.style.cssText = 'width: 100%; padding: 1rem; font-size: 1.2rem; margin-bottom: 1rem;';
+            testButton.innerHTML = '🔊 Tester l\'audio maintenant';
+            testButton.onclick = () => {
+                // Marquer le consentement et jouer l'audio
+                localStorage.setItem('audio_consent', 'true');
+                localStorage.setItem('audio_enabled', 'true');
+                playQuestion0Audio();
+                testButton.remove();
+            };
+
+            audioConfirmation.insertBefore(testButton, audioConfirmation.firstChild);
+        }
     }
 
     function startRecording() {
