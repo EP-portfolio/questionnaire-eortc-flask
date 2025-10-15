@@ -572,6 +572,14 @@ class FallbackRecognitionManager {
                 return;
             }
 
+            // ✅ GESTION D'ERREUR : Vérifier le content-type
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const responseText = await response.text();
+                console.warn('⚠️ Réponse non-JSON reçue:', responseText);
+                return;
+            }
+
             const result = await response.json();
             console.log('📝 Résultat serveur:', result);
 
