@@ -257,6 +257,12 @@ class QuestionnaireManager {
                 window.speechManager.pauseRecognition();
             }
 
+            // ✅ METTRE EN PAUSE Firefox aussi
+            if (window.fallbackManager) {
+                console.log('🦊 Firefox : Mise en pause de l\'écoute continue');
+                window.fallbackManager.stopContinuousSpeech();
+            }
+
             const statusText = document.getElementById('audio-status-text');
             const statusContainer = document.getElementById('audio-status');
             // Ne pas afficher le status pendant le chargement
@@ -339,6 +345,12 @@ class QuestionnaireManager {
                         if (window.speechManager) {
                             console.log('▶️ Reprise de la reconnaissance vocale');
                             window.speechManager.resumeRecognition();
+                        }
+
+                        // ✅ REDÉMARRER Firefox aussi
+                        if (window.fallbackManager) {
+                            console.log('🦊 Firefox : Redémarrage de l\'écoute continue');
+                            window.fallbackManager.startContinuousSpeech();
                         }
                     }, 2500);
                 };
