@@ -636,8 +636,16 @@
     }
 
     function stopAudio() {
+        console.log('🔇 Arrêt audio demandé');
+
+        // Arrêter l'audio de la question
         if (window.questionnaireManager) {
             window.questionnaireManager.stopAudio();
+        }
+
+        // ✅ NOUVEAU : Gestion intelligente de la reconnaissance vocale
+        if (window.handleAudioStop) {
+            window.handleAudioStop();
         }
     }
 </script>

@@ -39,6 +39,24 @@ class SpeechRecognitionManager {
         }
     }
 
+    // ✅ NOUVEAU : Gestion intelligente de l'arrêt audio
+    handleAudioStop() {
+        console.log('🔇 Audio arrêté - Gestion intelligente');
+
+        // Pour Chrome : juste mettre en pause
+        if (this.recognition) {
+            this.pauseRecognition();
+
+            // Redémarrer automatiquement après 2 secondes
+            setTimeout(() => {
+                if (this.isPaused) {
+                    console.log('🔄 Redémarrage automatique après arrêt audio');
+                    this.resumeRecognition();
+                }
+            }, 2000);
+        }
+    }
+
     init() {
         this.isWebSpeechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 
@@ -427,10 +445,35 @@ class FallbackRecognitionManager {
         this.isPaused = false;
     }
 
+    // ✅ NOUVEAU : Gestion intelligente de l'arrêt audio pour Firefox
+    handleAudioStop() {
+        console.log('🔇 Audio arrêté - Gestion Firefox');
+
+        // Pour Firefox : arrêter temporairement et redémarrer
+        if (this.mediaRecorder && this.isListening) {
+            console.log('🦊 Firefox : Arrêt temporaire pour audio');
+            this.stopContinuousSpeech();
+
+            // Redémarrer automatiquement après 3 secondes
+            setTimeout(() => {
+                if (!this.isListening) {
+                    console.log('🦊 Firefox : Redémarrage après arrêt audio');
+                    this.startContinuousSpeech();
+                }
+            }, 3000);
+        }
+    }
+
     async startContinuousSpeech() {
         if (this.isListening) {
             console.log('⚠️ Écoute déjà active');
             return;
+        }
+
+        // ✅ VÉRIFICATION : Nettoyer l'état précédent si nécessaire
+        if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
+            console.log('🦊 Firefox : Nettoyage état précédent');
+            this.mediaRecorder = null;
         }
 
         try {
@@ -934,6 +977,19 @@ function startRecording() {
     }
 }
 
+// ✅ NOUVELLE FONCTION : Gestion intelligente de l'arrêt audio
+function handleAudioStop() {
+    console.log('🔇 Gestion globale de l\'arrêt audio');
+
+    if (speechManager) {
+        console.log('🌐 Chrome : Gestion arrêt audio');
+        speechManager.handleAudioStop();
+    } else if (fallbackManager) {
+        console.log('🦊 Firefox : Gestion arrêt audio');
+        fallbackManager.handleAudioStop();
+    }
+}
+
 // ✅ DÉTECTION AMÉLIORÉE des navigateurs
 const isWebSpeechSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 const userAgent = navigator.userAgent.toLowerCase();
@@ -1005,6 +1061,9 @@ let managerType = null;
 // ✅ ASSIGNATION des variables globales
 window.sessionId = new URLSearchParams(window.location.search).get('session_id');
 window.currentQuestion = 1;
+
+// ✅ EXPOSER les fonctions globales
+window.handleAudioStop = handleAudioStop;
 
 // ✅ FONCTION D'INITIALISATION AMÉLIORÉE
 window.initSpeechRecognition = function () {
