@@ -460,10 +460,17 @@
             return;
         }
 
-        // ✅ Fallback pour Chrome (Web Speech API)
+        // ✅ VÉRIFICATION : Chrome/Edge uniquement
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            alert('Erreur : La reconnaissance vocale n\'est pas disponible.');
-            return;
+            console.log('🦊 Firefox détecté - Utilisation du fallbackManager');
+            // Pour Firefox, utiliser le fallbackManager au lieu de Web Speech API
+            if (window.fallbackManager) {
+                window.fallbackManager.startContinuousSpeech();
+                return;
+            } else {
+                alert('Erreur : La reconnaissance vocale n\'est pas disponible.');
+                return;
+            }
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
