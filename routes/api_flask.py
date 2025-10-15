@@ -699,15 +699,16 @@ def transcribe_chunk():
             "GOOGLE_CLOUD_API_KEY"
         )
         print(f"🔍 DEBUG: Clé API présente: {api_key is not None}")
+        print(f"🔍 DEBUG: Clé API (premiers caractères): {api_key[:10] if api_key else 'None'}...")
 
         if not api_key:
             print("❌ DEBUG: Clé API Google Cloud manquante")
-            # ✅ FALLBACK : Retourner une transcription simulée pour Firefox
-            print("🦊 Firefox : Mode fallback - transcription simulée")
+            # ✅ FALLBACK : Retourner une transcription vide pour Firefox
+            print("🦊 Firefox : Mode fallback - transcription vide")
             return jsonify(
                 {
                     "success": True,
-                    "transcript": "pas du tout",  # Réponse par défaut pour test
+                    "transcript": "",  # Transcription vide pour éviter réponse automatique
                     "fallback": True,
                 }
             )
@@ -733,12 +734,12 @@ def transcribe_chunk():
             print(f"❌ DEBUG: Erreur API Google Cloud: {response.status_code}")
             print(f"❌ DEBUG: Réponse: {response.text}")
 
-            # ✅ FALLBACK : Pour toutes les erreurs API, utiliser transcription simulée
+            # ✅ FALLBACK : Pour toutes les erreurs API, retourner transcription vide
             print("🦊 Firefox : Erreur API - Mode fallback activé")
             return jsonify(
                 {
                     "success": True,
-                    "transcript": "pas du tout",  # Réponse par défaut
+                    "transcript": "",  # Transcription vide pour éviter réponse automatique
                     "fallback": True,
                 }
             )
@@ -754,12 +755,12 @@ def transcribe_chunk():
             return jsonify({"success": True, "transcript": transcript})
         else:
             print(f"⚠️ DEBUG: Aucun résultat dans la réponse: {result}")
-            # ✅ FALLBACK : Si pas de résultat, utiliser transcription simulée
+            # ✅ FALLBACK : Si pas de résultat, retourner une transcription vide
             print("🦊 Firefox : Pas de résultat - Mode fallback activé")
             return jsonify(
                 {
                     "success": True,
-                    "transcript": "pas du tout",  # Réponse par défaut
+                    "transcript": "",  # Transcription vide pour éviter réponse automatique
                     "fallback": True,
                 }
             )
