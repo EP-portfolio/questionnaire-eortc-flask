@@ -331,7 +331,13 @@ class QuestionnaireManager {
                 this.currentAudio.onended = () => {
                     console.log('✅ Audio terminé');
 
-                    // ✅ DÉLAI DE 2.5s avant de changer les boutons, afficher le message et reprendre
+                    // ✅ DÉLAI ADAPTATIF selon le navigateur
+                    const userAgent = navigator.userAgent.toLowerCase();
+                    const isFirefox = userAgent.includes('firefox');
+                    const delay = isFirefox ? 500 : 2500; // 0.5s Firefox, 2.5s Chrome
+
+                    console.log(`⏱️ Délai adaptatif: ${delay}ms (${isFirefox ? 'Firefox' : 'Chrome'})`);
+
                     setTimeout(() => {
                         // Changer les boutons APRÈS le délai
                         this.toggleAudioButtons(false);
@@ -352,7 +358,7 @@ class QuestionnaireManager {
                             console.log('🦊 Firefox : Redémarrage de l\'écoute continue');
                             window.fallbackManager.startContinuousSpeech();
                         }
-                    }, 2500);
+                    }, delay);
                 };
 
             } else {
