@@ -60,13 +60,13 @@ class QuestionnaireManager {
             this.currentQuestion = questionNum;
             window.currentQuestion = questionNum;
 
-            // ✅ ARRÊTER l'audio en cours (si lecture en cours)
+            // ✅ ARRÊTER l'audio en cours SANS reprendre la reconnaissance (changement de question)
             if (this.currentAudio) {
                 this.currentAudio.pause();
                 this.currentAudio = null;
             }
 
-            // ✅ RÉINITIALISER les boutons audio
+            // ✅ RÉINITIALISER les boutons audio (sans appeler stopAudio())
             this.toggleAudioButtons(false);
 
             // ✅ MASQUER le status audio au début de chaque question
