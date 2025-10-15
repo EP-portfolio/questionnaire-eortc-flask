@@ -39,18 +39,19 @@ class SpeechRecognitionManager {
         }
     }
 
-    // ✅ NOUVEAU : Gestion intelligente de l'arrêt audio
+    // ✅ NOUVEAU : Gestion intelligente de l'arrêt audio (Chrome uniquement)
     handleAudioStop() {
-        console.log('🔇 Audio arrêté - Gestion intelligente');
+        console.log('🔇 Audio arrêté - Gestion Chrome (logique existante préservée)');
 
-        // Pour Chrome : juste mettre en pause
-        if (this.recognition) {
+        // ✅ PRÉSERVER : Logique Chrome existante qui fonctionne
+        if (this.recognition && !this.isPaused) {
+            console.log('🌐 Chrome : Mise en pause simple (logique existante)');
             this.pauseRecognition();
 
-            // Redémarrer automatiquement après 2 secondes
+            // Redémarrage automatique après 2 secondes (logique existante)
             setTimeout(() => {
                 if (this.isPaused) {
-                    console.log('🔄 Redémarrage automatique après arrêt audio');
+                    console.log('🌐 Chrome : Reprise automatique (logique existante)');
                     this.resumeRecognition();
                 }
             }, 2000);
@@ -445,32 +446,35 @@ class FallbackRecognitionManager {
         this.isPaused = false;
     }
 
-    // ✅ NOUVEAU : Gestion intelligente de l'arrêt audio pour Firefox
+    // ✅ NOUVEAU : Gestion intelligente de l'arrêt audio pour Firefox uniquement
     handleAudioStop() {
-        console.log('🔇 Audio arrêté - Gestion Firefox');
+        console.log('🔇 Audio arrêté - Gestion Firefox (logique spécifique)');
 
-        // Pour Firefox : arrêter temporairement et redémarrer
+        // ✅ LOGIQUE FIREFOX UNIQUEMENT : Arrêter et redémarrer proprement
         if (this.mediaRecorder && this.isListening) {
-            console.log('🦊 Firefox : Arrêt temporaire pour audio');
+            console.log('🦊 Firefox : Arrêt pour audio (logique Firefox)');
+
+            // Arrêter proprement
             this.stopContinuousSpeech();
 
-            // Redémarrer automatiquement après 3 secondes
+            // ✅ FIREFOX : Redémarrage simple et direct
             setTimeout(() => {
-                if (!this.isListening) {
-                    console.log('🦊 Firefox : Redémarrage après arrêt audio');
-                    this.startContinuousSpeech();
-                }
-            }, 3000);
+                console.log('🦊 Firefox : Redémarrage après arrêt audio');
+                this.startContinuousSpeech();
+            }, 1500); // 1.5 secondes pour Firefox
+        } else {
+            console.log('🦊 Firefox : Pas de MediaRecorder actif');
         }
     }
 
     async startContinuousSpeech() {
+        // ✅ FIREFOX : Logique simple sans interférer avec Chrome
         if (this.isListening) {
-            console.log('⚠️ Écoute déjà active');
+            console.log('⚠️ Firefox : Écoute déjà active');
             return;
         }
 
-        // ✅ VÉRIFICATION : Nettoyer l'état précédent si nécessaire
+        // ✅ FIREFOX : Nettoyer l'état précédent si nécessaire
         if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
             console.log('🦊 Firefox : Nettoyage état précédent');
             this.mediaRecorder = null;
@@ -941,6 +945,9 @@ class FallbackRecognitionManager {
             notification.remove();
         }, 5000);
     }
+
+    // ✅ SUPPRIMÉ : Indicateur visuel complexe non nécessaire
+    // La logique Firefox est maintenant simple et directe
 }
 
 // Initialisation globale

@@ -248,8 +248,21 @@
                 addLog('❌ handleAudioStop() non disponible');
             }
 
-            document.getElementById('recognition-status').textContent = '🔇 Audio arrêté - Attendre redémarrage...';
+            document.getElementById('recognition-status').textContent = '🔇 Audio arrêté - Redémarrage automatique...';
             document.getElementById('recognition-status').className = 'status warning';
+
+            // Vérifier le redémarrage après 3 secondes
+            setTimeout(() => {
+                if (window.fallbackManager && window.fallbackManager.isListening) {
+                    addLog('✅ Redémarrage réussi - Reconnaissance active');
+                    document.getElementById('recognition-status').textContent = '✅ Reconnaissance redémarrée - Parlez maintenant';
+                    document.getElementById('recognition-status').className = 'status success';
+                } else {
+                    addLog('❌ Redémarrage échoué - Reconnaissance inactive');
+                    document.getElementById('recognition-status').textContent = '❌ Redémarrage échoué - Cliquez "Démarrer" manuellement';
+                    document.getElementById('recognition-status').className = 'status error';
+                }
+            }, 3000);
         }
 
         // Intercepter les transcriptions
