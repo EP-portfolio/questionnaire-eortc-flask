@@ -550,7 +550,13 @@
         // Démarrer l'écoute continue
         setTimeout(() => {
             if (window.speechManager) {
+                // Chrome/Edge - Web Speech API
                 window.speechManager.startContinuousSpeech();
+                document.getElementById('listening-status').style.display = 'block';
+            } else if (window.fallbackManager) {
+                // Firefox - Fallback avec serveur
+                console.log('🦊 Firefox : Redémarrage écoute continue pour questionnaire');
+                window.fallbackManager.startContinuousSpeech();
                 document.getElementById('listening-status').style.display = 'block';
             }
         }, 1000);
