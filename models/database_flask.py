@@ -119,12 +119,23 @@ class DatabaseManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
+                
+                # ✅ SUPPRIMER l'ancienne réponse si elle existe (éviter les doublons)
+                cursor.execute(
+                    """
+                    DELETE FROM responses 
+                    WHERE session_id = ? AND question_num = ?
+                    """,
+                    (session_id, question_num),
+                )
+                
+                # Insérer la nouvelle réponse
                 cursor.execute(
                     """
                     INSERT INTO responses (session_id, question_num, question_text, 
                                         score, response_text, transcript, response_type)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
+                    """,
                     (
                         session_id,
                         question_num,

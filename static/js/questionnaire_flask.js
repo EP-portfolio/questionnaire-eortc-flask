@@ -60,6 +60,12 @@ class QuestionnaireManager {
             this.currentQuestion = questionNum;
             window.currentQuestion = questionNum;
 
+            // ✅ MASQUER le status audio au début de chaque question
+            const statusContainer = document.getElementById('audio-status');
+            if (statusContainer) {
+                statusContainer.style.display = 'none';
+            }
+
             this.updateProgress();
             this.updateNavigationButtons();
 

@@ -135,27 +135,29 @@
         }, 1000);
     });
 
-    async function playResultsAudio() {
-        try {
-            console.log('🔊 Lecture audio résultats');
-
-            const response = await fetch(`/api/get_result_audio_dynamic/{{ session_id }}`);
-
-            if (response.ok) {
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                const audio = new Audio(audioUrl);
-                audio.playbackRate = 1.15;
-
-                await audio.play();
-                console.log('✅ Audio résultats joué');
-            } else {
-                console.warn('Audio résultats non disponible');
-            }
-        } catch (error) {
-            console.error('Erreur lecture audio résultats:', error);
+async function playResultsAudio() {
+    try {
+        console.log('🔊 Lecture audio résultats (message pré-généré)');
+        
+        // Utiliser le message de félicitations générique pré-généré
+        // On ne lit PAS les statistiques, juste le message de félicitations
+        const response = await fetch(`/api/get_result_audio/complete`);
+        
+        if (response.ok) {
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.playbackRate = 1.15;
+            
+            await audio.play();
+            console.log('✅ Audio résultats joué (félicitations)');
+        } else {
+            console.warn('Audio résultats non disponible');
         }
+    } catch (error) {
+        console.error('Erreur lecture audio résultats:', error);
     }
+}
 
     async function loadSessionData() {
         try {

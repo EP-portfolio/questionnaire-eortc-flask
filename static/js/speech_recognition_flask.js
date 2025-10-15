@@ -67,6 +67,12 @@ class SpeechRecognitionManager {
             };
 
             this.recognition.onresult = (event) => {
+                // ✅ VÉRIFIER isPaused IMMÉDIATEMENT
+                if (this.isPaused) {
+                    console.log('⏸️ Reconnaissance en pause - Résultat ignoré (onresult)');
+                    return; // Ignorer TOUS les résultats pendant la pause
+                }
+
                 console.log('DEBUG: onresult déclenché', event);
 
                 const last = event.results.length - 1;
@@ -84,7 +90,10 @@ class SpeechRecognitionManager {
             };
 
             this.recognition.onerror = (event) => {
-                console.error('Erreur reconnaissance:', event.error);
+                // ✅ Ne pas logger l'erreur "network" (timeout normal)
+                if (event.error !== 'network') {
+                    console.error('Erreur reconnaissance:', event.error);
+                }
                 this.handleSpeechError(event.error);
             };
 
@@ -144,12 +153,6 @@ class SpeechRecognitionManager {
     }
 
     handleSpeechResult(transcript, confidence) {
-        // ✅ VÉRIFIER SI EN PAUSE
-        if (this.isPaused) {
-            console.log('⏸️ Reconnaissance en pause - Résultat ignoré:', transcript);
-            return;
-        }
-
         console.log('DEBUG: handleSpeechResult appelé avec:', transcript);
 
         // ============================================
