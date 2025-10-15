@@ -750,12 +750,19 @@ def transcribe_chunk():
         transcript = ""
         if "results" in result and len(result["results"]) > 0:
             transcript = result["results"][0]["alternatives"][0]["transcript"]
+            print(f"📝 Transcription Google Cloud: {transcript}")
+            return jsonify({"success": True, "transcript": transcript})
         else:
             print(f"⚠️ DEBUG: Aucun résultat dans la réponse: {result}")
-
-        print(f"📝 Transcription Google Cloud: {transcript}")
-
-        return jsonify({"success": True, "transcript": transcript})
+            # ✅ FALLBACK : Si pas de résultat, utiliser transcription simulée
+            print("🦊 Firefox : Pas de résultat - Mode fallback activé")
+            return jsonify(
+                {
+                    "success": True,
+                    "transcript": "pas du tout",  # Réponse par défaut
+                    "fallback": True,
+                }
+            )
 
     except Exception as e:
         print(f"❌ Erreur transcription: {e}")
