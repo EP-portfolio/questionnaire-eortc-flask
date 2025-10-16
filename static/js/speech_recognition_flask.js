@@ -206,7 +206,7 @@ class SpeechRecognitionManager {
         // }
 
         // ✅ NOUVEAU : Filtre spécial pour les réponses courtes valides
-        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
+        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
         if (cleanTranscript.length <= 3 && !shortValidResponses.includes(cleanTranscript.toLowerCase())) {
             console.log('⚠️ REJETÉ : Texte trop court et non reconnu comme réponse valide');
             return;
@@ -797,8 +797,8 @@ class FallbackRecognitionManager {
                 console.log('📝 Transcription serveur:', transcript);
 
                 // ✅ FILTRE : Ignorer les transcriptions trop courtes ou parasites
-                // ✅ CORRECTION : Accepter les réponses courtes valides comme "7"
-                const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
+                // ✅ CORRECTION : Accepter les réponses courtes valides comme "7" et "une"
+                const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
                 if (transcript.length < 2 && !shortValidResponses.includes(transcript.toLowerCase())) {
                     console.log('🔇 Transcription trop courte et non reconnue comme réponse valide:', transcript);
                     return;
@@ -846,7 +846,7 @@ class FallbackRecognitionManager {
         // }
 
         // ✅ NOUVEAU : Filtre spécial pour les réponses courtes valides
-        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
+        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
         if (text.length <= 3 && !shortValidResponses.includes(text)) {
             console.log('⚠️ REJETÉ : Texte trop court et non reconnu comme réponse valide');
             return;
@@ -886,10 +886,9 @@ class FallbackRecognitionManager {
 
             if (result.valid) {
                 console.log('✅ Réponse validée:', result.response_text);
-                // ✅ AFFICHAGE SUCCÈS Firefox
-                if (window.questionnaireManager) {
-                    window.questionnaireManager.showSuccess(result.response_text);
-                }
+                // ✅ AFFICHAGE SUCCÈS Firefox (supprimer l'affichage double)
+                // L'affichage est déjà géré par SpeechRecognitionManager pour Chrome/Edge
+                // Pas besoin d'afficher deux fois sur Firefox
 
                 if (result.is_complete) {
                     setTimeout(() => {
@@ -913,7 +912,11 @@ class FallbackRecognitionManager {
                 // ✅ REDÉMARRER l'écoute Firefox après erreur
                 setTimeout(() => {
                     console.log('🦊 Firefox : Redémarrage après erreur');
-                    this.startContinuousSpeech();
+                    // ✅ S'assurer que l'écoute est complètement arrêtée avant de redémarrer
+                    this.stopContinuousSpeech();
+                    setTimeout(() => {
+                        this.startContinuousSpeech();
+                    }, 500);
                 }, 2000);
             }
 
@@ -947,6 +950,16 @@ class FallbackRecognitionManager {
         } else {
             // Fallback si questionnaireManager n'est pas disponible
             console.log('✅ Succès:', message);
+        }
+    }
+
+    // ✅ NOUVELLE FONCTION : Affichage des suggestions pour Firefox
+    showSuggestions(suggestions) {
+        if (window.questionnaireManager && window.questionnaireManager.showSuggestions) {
+            window.questionnaireManager.showSuggestions(suggestions);
+        } else {
+            // Fallback si questionnaireManager n'est pas disponible
+            console.log('💡 Suggestions:', suggestions);
         }
     }
 
