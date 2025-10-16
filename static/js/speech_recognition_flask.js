@@ -886,10 +886,14 @@ class FallbackRecognitionManager {
 
             if (result.valid) {
                 console.log('✅ Réponse validée:', result.response_text);
+                // ✅ AFFICHAGE SUCCÈS Firefox
+                if (window.questionnaireManager) {
+                    window.questionnaireManager.showSuccess(result.response_text);
+                }
 
                 if (result.is_complete) {
                     setTimeout(() => {
-                        window.location.href = `/ resultat / ${window.sessionId} `;
+                        window.location.href = `/resultat/${window.sessionId}`;
                     }, 1500);
                 } else if (result.next_question && window.questionnaireManager) {
                     setTimeout(() => {
@@ -898,14 +902,51 @@ class FallbackRecognitionManager {
                 }
             } else {
                 console.log('❌ Réponse non reconnue');
+                // ✅ AFFICHAGE ERREUR Firefox
+                if (window.questionnaireManager) {
+                    window.questionnaireManager.showError(result.error || 'Réponse non reconnue');
+                    if (result.suggestions) {
+                        window.questionnaireManager.showSuggestions(result.suggestions);
+                    }
+                }
+
+                // ✅ REDÉMARRER l'écoute Firefox après erreur
+                setTimeout(() => {
+                    console.log('🦊 Firefox : Redémarrage après erreur');
+                    this.startContinuousSpeech();
+                }, 2000);
             }
 
         } catch (error) {
             console.error('❌ Erreur traitement réponse:', error);
+            // ✅ AFFICHAGE ERREUR Firefox pour les erreurs réseau
+            if (window.questionnaireManager) {
+                window.questionnaireManager.showError('Erreur : Impossible de traiter la réponse');
+            }
         } finally {
             setTimeout(() => {
                 this.processingResponse = false;
             }, 1000);
+        }
+    }
+
+    // ✅ NOUVELLES FONCTIONS : Affichage des erreurs et succès pour Firefox
+    showError(message) {
+        if (window.questionnaireManager) {
+            window.questionnaireManager.showError(message);
+        } else {
+            // Fallback si questionnaireManager n'est pas disponible
+            console.error('❌ Erreur:', message);
+            alert(message);
+        }
+    }
+
+    showSuccess(message) {
+        if (window.questionnaireManager) {
+            window.questionnaireManager.showSuccess(message);
+        } else {
+            // Fallback si questionnaireManager n'est pas disponible
+            console.log('✅ Succès:', message);
         }
     }
 
