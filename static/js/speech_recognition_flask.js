@@ -615,10 +615,25 @@ class FallbackRecognitionManager {
     // ✅ NOUVELLE MÉTHODE : Détection de parole basique
     async detectSpeech(audioBlob) {
         try {
+            // ✅ CORRECTION : Vérifier le type MIME avant décodage
+            if (!audioBlob.type || !audioBlob.type.includes('audio')) {
+                console.log('🔇 Chunk non-audio ignoré');
+                return false;
+            }
+
             // Créer un AudioContext pour analyser l'audio
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const arrayBuffer = await audioBlob.arrayBuffer();
-            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+            // ✅ CORRECTION : Gestion d'erreur pour decodeAudioData
+            let audioBuffer;
+            try {
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            } catch (decodeError) {
+                console.log('🔇 Erreur décodage audio (format non supporté):', decodeError.message);
+                audioContext.close();
+                return false; // Considérer comme silencieux
+            }
 
             // Analyser les données audio
             const channelData = audioBuffer.getChannelData(0);
@@ -632,7 +647,7 @@ class FallbackRecognitionManager {
             const rms = Math.sqrt(sum / length);
 
             // ✅ AMÉLIORATION : Seuil plus sensible pour question 0
-            const speechThreshold = 0.005; // Réduire de 0.01 à 0.005
+            const speechThreshold = 0.005;
             const hasSpeech = rms > speechThreshold;
 
             console.log(`🔍 DEBUG: RMS audio: ${rms.toFixed(4)}, Seuil: ${speechThreshold}, Parole: ${hasSpeech}`);
@@ -642,7 +657,7 @@ class FallbackRecognitionManager {
 
         } catch (error) {
             console.warn('⚠️ Erreur détection parole:', error);
-            // En cas d'erreur, considérer qu'il y a de la parole
+            // En cas d'erreur, considérer qu'il y a de la parole pour éviter de perdre des réponses
             return true;
         }
     }
@@ -909,15 +924,16 @@ class FallbackRecognitionManager {
                     }
                 }
 
-                // ✅ REDÉMARRER l'écoute Firefox après erreur
+                // ✅ REDÉMARRER l'écoute Firefox après erreur (1 seconde)
                 setTimeout(() => {
                     console.log('🦊 Firefox : Redémarrage après erreur');
                     // ✅ S'assurer que l'écoute est complètement arrêtée avant de redémarrer
                     this.stopContinuousSpeech();
                     setTimeout(() => {
+                        console.log('🦊 Firefox : Démarrage de la nouvelle écoute');
                         this.startContinuousSpeech();
-                    }, 500);
-                }, 2000);
+                    }, 500); // Délai court entre arrêt et redémarrage
+                }, 1000); // ✅ 1 SECONDE au lieu de 3
             }
 
         } catch (error) {
@@ -926,6 +942,16 @@ class FallbackRecognitionManager {
             if (window.questionnaireManager) {
                 window.questionnaireManager.showError('Erreur : Impossible de traiter la réponse');
             }
+
+            // ✅ REDÉMARRER l'écoute Firefox après erreur réseau (1 seconde)
+            setTimeout(() => {
+                console.log('🦊 Firefox : Redémarrage après erreur réseau');
+                this.stopContinuousSpeech();
+                setTimeout(() => {
+                    console.log('🦊 Firefox : Démarrage après erreur réseau');
+                    this.startContinuousSpeech();
+                }, 500);
+            }, 1000); // ✅ 1 SECONDE au lieu de 3
         } finally {
             setTimeout(() => {
                 this.processingResponse = false;
@@ -957,9 +983,14 @@ class FallbackRecognitionManager {
     showSuggestions(suggestions) {
         if (window.questionnaireManager && window.questionnaireManager.showSuggestions) {
             window.questionnaireManager.showSuggestions(suggestions);
+        } else if (window.questionnaireManager && window.questionnaireManager.showError) {
+            // Fallback : utiliser showError pour afficher les suggestions
+            const suggestionText = suggestions ? suggestions.join(', ') : 'Options disponibles';
+            window.questionnaireManager.showError(`Réponse non reconnue. Options : ${suggestionText}`);
         } else {
-            // Fallback si questionnaireManager n'est pas disponible
+            // Fallback final
             console.log('💡 Suggestions:', suggestions);
+            alert(`Réponse non reconnue. Options : ${suggestions ? suggestions.join(', ') : 'Veuillez réessayer'}`);
         }
     }
 
