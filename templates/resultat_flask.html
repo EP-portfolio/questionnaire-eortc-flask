@@ -135,29 +135,80 @@
         }, 1000);
     });
 
-async function playResultsAudio() {
-    try {
-        console.log('🔊 Lecture audio résultats (message pré-généré)');
-        
-        // Utiliser le message de félicitations générique pré-généré
-        // On ne lit PAS les statistiques, juste le message de félicitations
-        const response = await fetch(`/api/get_result_audio/complete`);
-        
-        if (response.ok) {
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
-            audio.playbackRate = 1.15;
-            
-            await audio.play();
-            console.log('✅ Audio résultats joué (félicitations)');
-        } else {
-            console.warn('Audio résultats non disponible');
+    async function playResultsAudio() {
+        try {
+            console.log('🔊 Lecture audio résultats (message pré-généré)');
+
+            // ✅ DÉTECTER Firefox et afficher un bouton de démarrage audio
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isFirefox = userAgent.includes('firefox');
+
+            if (isFirefox) {
+                console.log('🦊 Firefox détecté - Affichage du bouton de démarrage audio pour résultats');
+                showFirefoxResultsAudioButton();
+                return;
+            }
+
+            // Utiliser le message de félicitations générique pré-généré
+            const response = await fetch(`/api/get_result_audio/complete`);
+
+            if (response.ok) {
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                audio.playbackRate = 1.15;
+
+                await audio.play();
+                console.log('✅ Audio résultats joué (félicitations)');
+            } else {
+                console.warn('Audio résultats non disponible');
+            }
+        } catch (error) {
+            console.error('Erreur lecture audio résultats:', error);
         }
-    } catch (error) {
-        console.error('Erreur lecture audio résultats:', error);
     }
-}
+
+    // ✅ NOUVELLE FONCTION : Bouton Firefox pour audio résultats
+    function showFirefoxResultsAudioButton() {
+        const successHeader = document.querySelector('.success-header');
+        if (successHeader) {
+            const firefoxButton = document.createElement('button');
+            firefoxButton.type = 'button';
+            firefoxButton.className = 'action-btn primary';
+            firefoxButton.style.cssText = 'margin: 1rem auto; display: block; padding: 1rem 2rem; font-size: 1.2rem;';
+            firefoxButton.innerHTML = '🔊 Écouter le message de félicitations (Firefox)';
+            firefoxButton.onclick = async () => {
+                console.log('🦊 Firefox - Démarrage audio résultats avec interaction utilisateur');
+                await playResultsAudioDirect();
+                firefoxButton.remove();
+            };
+
+            successHeader.appendChild(firefoxButton);
+        }
+    }
+
+    // ✅ NOUVELLE FONCTION : Lecture directe audio résultats (sans vérifications)
+    async function playResultsAudioDirect() {
+        console.log('🔊 Lecture directe audio résultats (pré-généré)');
+
+        try {
+            const response = await fetch(`/api/get_result_audio/complete`);
+
+            if (response.ok) {
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                audio.playbackRate = 1.15;
+
+                await audio.play();
+                console.log('✅ Audio résultats joué (fichier pré-généré)');
+            } else {
+                console.warn('Audio résultats non disponible');
+            }
+        } catch (error) {
+            console.error('Erreur lecture audio résultats:', error);
+        }
+    }
 
     async function loadSessionData() {
         try {

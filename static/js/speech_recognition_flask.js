@@ -191,11 +191,24 @@ class SpeechRecognitionManager {
         }
 
 
-        // 2️⃣ FILTRE : Rejeter si le texte est trop long (> 12 caractères)
-        // ✅ AMÉLIORATION : Limite augmentée à 15 pour accepter plus facilement
+        // 2️⃣ FILTRE : Rejeter si le texte est trop long (> 20 caractères)
         if (cleanTranscript.length > 20) {
             console.log(`⚠️ REJETÉ : Texte trop long (${cleanTranscript.length} caractères)`);
             console.log(`   Texte rejeté : "${cleanTranscript.substring(0, 50)}..."`);
+            return;
+        }
+
+        // ✅ CORRECTION : Supprimer le filtre de longueur minimale pour accepter "7"
+        // Ancien code supprimé :
+        // if (cleanTranscript.length < 2) {
+        //     console.log('⚠️ REJETÉ : Texte trop court');
+        //     return;
+        // }
+
+        // ✅ NOUVEAU : Filtre spécial pour les réponses courtes valides
+        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
+        if (cleanTranscript.length <= 3 && !shortValidResponses.includes(cleanTranscript.toLowerCase())) {
+            console.log('⚠️ REJETÉ : Texte trop court et non reconnu comme réponse valide');
             return;
         }
 
@@ -784,8 +797,10 @@ class FallbackRecognitionManager {
                 console.log('📝 Transcription serveur:', transcript);
 
                 // ✅ FILTRE : Ignorer les transcriptions trop courtes ou parasites
-                if (transcript.length < 2) {
-                    console.log('🔇 Transcription trop courte ignorée:', transcript);
+                // ✅ CORRECTION : Accepter les réponses courtes valides comme "7"
+                const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
+                if (transcript.length < 2 && !shortValidResponses.includes(transcript.toLowerCase())) {
+                    console.log('🔇 Transcription trop courte et non reconnue comme réponse valide:', transcript);
                     return;
                 }
 
@@ -820,6 +835,20 @@ class FallbackRecognitionManager {
 
         if (/question\s+\d+/.test(text)) {
             console.log('⚠️ REJETÉ : Contient "question X"');
+            return;
+        }
+
+        // ✅ CORRECTION : Supprimer le filtre de longueur minimale pour accepter "7"
+        // Ancien code supprimé :
+        // if (text.length < 2) {
+        //     console.log('⚠️ REJETÉ : Texte trop court');
+        //     return;
+        // }
+
+        // ✅ NOUVEAU : Filtre spécial pour les réponses courtes valides
+        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
+        if (text.length <= 3 && !shortValidResponses.includes(text)) {
+            console.log('⚠️ REJETÉ : Texte trop court et non reconnu comme réponse valide');
             return;
         }
 
