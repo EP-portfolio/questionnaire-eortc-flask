@@ -63,17 +63,17 @@ class SpeechRecognitionManager {
     showNetworkErrorSolution() {
         const notification = document.createElement('div');
         notification.innerHTML = `
-            <div style="background: #ff9800; color: white; padding: 1rem; border-radius: 8px; margin: 1rem; text-align: center;">
-                <i class="fas fa-wifi" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
-                <h4 style="margin: 0 0 0.5rem 0;">Problème de connexion réseau</h4>
-                <p style="margin: 0 0 1rem 0;">La reconnaissance vocale rencontre des difficultés de connexion.</p>
+            <div style="background: #2196F3; color: white; padding: 1rem; border-radius: 8px; margin: 1rem; text-align: center;">
+                <i class="fas fa-info-circle" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                <h4 style="margin: 0 0 0.5rem 0;">Connexion instable détectée</h4>
+                <p style="margin: 0 0 1rem 0;">La reconnaissance vocale continue de fonctionner, mais avec des interruptions temporaires.</p>
                 <div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem;">
-                    <strong>Solutions recommandées :</strong><br>
-                    • Vérifiez votre connexion internet<br>
-                    • Rechargez la page si nécessaire<br>
-                    • Utilisez les boutons de réponse en attendant
+                    <strong>Conseils :</strong><br>
+                    • Continuez à parler normalement<br>
+                    • Utilisez les boutons si nécessaire<br>
+                    • La reconnaissance se rétablira automatiquement
                 </div>
-                <button onclick="this.parentElement.parentElement.remove()" style="background: white; color: #ff9800; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+                <button onclick="this.parentElement.parentElement.remove()" style="background: white; color: #2196F3; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
                     Compris
                 </button>
             </div>
@@ -81,12 +81,12 @@ class SpeechRecognitionManager {
 
         document.body.appendChild(notification);
 
-        // Auto-suppression après 10 secondes
+        // Auto-suppression après 8 secondes
         setTimeout(() => {
             if (notification.parentElement) {
                 notification.remove();
             }
-        }, 10000);
+        }, 8000);
     }
 
     // ✅ NOUVEAU : Gestion intelligente de l'arrêt audio (Chrome uniquement)
@@ -196,6 +196,9 @@ class SpeechRecognitionManager {
                     this.shouldRestart = false;
                     return;
                 }
+
+                // ✅ SUPPRIMÉ : Ne jamais arrêter définitivement la reconnaissance
+                // La reconnaissance doit rester active pendant tout le questionnaire
 
                 if (this.shouldRestart && !this.isListening) {
                     console.log('Redémarrage automatique de l\'écoute...');
@@ -309,9 +312,16 @@ class SpeechRecognitionManager {
         // }
 
         // ✅ NOUVEAU : Filtre spécial pour les réponses courtes valides
-        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'pas', 'peu', 'tout'];
+        const shortValidResponses = [
+            '1', '2', '3', '4', '5', '6', '7',
+            'un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept',
+            'pas', 'peu', 'tout', 'beaucoup', 'plutôt',
+            // ✅ NOUVEAU : Variantes pour "un" (question 29-30)
+            'hun', 'eun', 'eune', 'une', 'on', 'en'
+        ];
         if (cleanTranscript.length <= 3 && !shortValidResponses.includes(cleanTranscript.toLowerCase())) {
             console.log('⚠️ REJETÉ : Texte trop court et non reconnu comme réponse valide');
+            console.log(`   Texte rejeté : "${cleanTranscript}"`);
             return;
         }
 
@@ -323,6 +333,11 @@ class SpeechRecognitionManager {
 
         // ✅ Le texte a passé tous les filtres
         console.log(`✅ ACCEPTÉ : "${cleanTranscript}" (${cleanTranscript.length} caractères)`);
+
+        // ✅ NOUVEAU : Debug spécial pour les questions 29-30
+        if (window.currentQuestion >= 29) {
+            console.log(`🔍 DEBUG Q${window.currentQuestion}: Transcript accepté: "${cleanTranscript}"`);
+        }
 
         // ============================================
         // FIN FILTRAGE
@@ -357,16 +372,16 @@ class SpeechRecognitionManager {
                 message = 'Erreur : Accès au microphone refusé';
                 break;
             case 'network':
-                // ✅ NOUVEAU : Gérer les erreurs réseau répétées
+                // ✅ NOUVEAU : Gérer les erreurs réseau sans arrêter définitivement
                 const now = Date.now();
                 if (now - this.lastNetworkError < 5000) { // Moins de 5 secondes depuis la dernière erreur
                     this.networkErrorCount++;
                     if (this.networkErrorCount >= 3) {
-                        console.log('⚠️ Trop d\'erreurs réseau - arrêt du redémarrage automatique');
-                        this.shouldRestart = false;
-                        // ✅ NOUVEAU : Proposer une solution alternative
+                        console.log('⚠️ Trop d\'erreurs réseau - affichage d\'aide mais continuation');
+                        // ✅ NOUVEAU : Afficher l'aide mais continuer la reconnaissance
                         this.showNetworkErrorSolution();
-                        return;
+                        // ✅ IMPORTANT : Ne pas arrêter la reconnaissance, juste afficher l'aide
+                        this.networkErrorCount = 0; // Reset pour permettre de nouveaux essais
                     }
                 } else {
                     this.networkErrorCount = 1; // Reset du compteur
