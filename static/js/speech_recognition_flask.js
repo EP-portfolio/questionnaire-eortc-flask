@@ -18,6 +18,12 @@ class SpeechRecognitionManager {
         this.shouldRestart = false;
         this.processingResponse = false;
         this.isPaused = false; // ✅ Pour pause/reprise
+        // ✅ NOUVEAU : Compteur pour éviter les redémarrages répétés
+        this.networkErrorCount = 0;
+        this.lastNetworkError = 0;
+        // ✅ NOUVEAU : Timeout de sécurité pour éviter les sessions trop longues
+        this.sessionStartTime = Date.now();
+        this.maxSessionDuration = 30 * 60 * 1000; // 30 minutes max
 
         this.init();
     }
@@ -37,6 +43,50 @@ class SpeechRecognitionManager {
             console.log('▶️ Reconnaissance vocale reprise');
             this.isPaused = false;
         }
+    }
+
+    // ✅ NOUVEAU : Nettoyer complètement la reconnaissance
+    cleanupRecognition() {
+        console.log('🧹 Nettoyage de la reconnaissance vocale');
+        if (this.recognition) {
+            this.shouldRestart = false;
+            this.recognition.stop();
+            this.recognition = null;
+        }
+        this.isListening = false;
+        this.isPaused = false;
+        this.networkErrorCount = 0;
+        this.lastNetworkError = 0;
+    }
+
+    // ✅ NOUVEAU : Afficher une solution pour les erreurs réseau
+    showNetworkErrorSolution() {
+        const notification = document.createElement('div');
+        notification.innerHTML = `
+            <div style="background: #ff9800; color: white; padding: 1rem; border-radius: 8px; margin: 1rem; text-align: center;">
+                <i class="fas fa-wifi" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                <h4 style="margin: 0 0 0.5rem 0;">Problème de connexion réseau</h4>
+                <p style="margin: 0 0 1rem 0;">La reconnaissance vocale rencontre des difficultés de connexion.</p>
+                <div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem;">
+                    <strong>Solutions recommandées :</strong><br>
+                    • Vérifiez votre connexion internet<br>
+                    • Rechargez la page si nécessaire<br>
+                    • Utilisez les boutons de réponse en attendant
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: white; color: #ff9800; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+                    Compris
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Auto-suppression après 10 secondes
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 10000);
     }
 
     // ✅ NOUVEAU : Gestion intelligente de l'arrêt audio (Chrome uniquement)
@@ -106,6 +156,9 @@ class SpeechRecognitionManager {
 
                 console.log('DEBUG: onresult déclenché', event);
 
+                // ✅ NOUVEAU : Reset du compteur d'erreurs réseau quand ça fonctionne
+                this.networkErrorCount = 0;
+
                 const last = event.results.length - 1;
                 const result = event.results[last];
                 const transcript = result[0].transcript.trim();
@@ -135,6 +188,14 @@ class SpeechRecognitionManager {
                 console.log('Reconnaissance vocale terminée');
                 this.isListening = false;
                 this.updateUI('stopped');
+
+                // ✅ NOUVEAU : Vérifier la durée de session avant redémarrage
+                const sessionDuration = Date.now() - this.sessionStartTime;
+                if (sessionDuration > this.maxSessionDuration) {
+                    console.log('⏰ Session trop longue - arrêt de la reconnaissance');
+                    this.shouldRestart = false;
+                    return;
+                }
 
                 if (this.shouldRestart && !this.isListening) {
                     console.log('Redémarrage automatique de l\'écoute...');
@@ -296,8 +357,22 @@ class SpeechRecognitionManager {
                 message = 'Erreur : Accès au microphone refusé';
                 break;
             case 'network':
-                // NE PAS afficher de message - redémarrage auto
-                console.log('⚠️ Timeout réseau - redémarrage auto');
+                // ✅ NOUVEAU : Gérer les erreurs réseau répétées
+                const now = Date.now();
+                if (now - this.lastNetworkError < 5000) { // Moins de 5 secondes depuis la dernière erreur
+                    this.networkErrorCount++;
+                    if (this.networkErrorCount >= 3) {
+                        console.log('⚠️ Trop d\'erreurs réseau - arrêt du redémarrage automatique');
+                        this.shouldRestart = false;
+                        // ✅ NOUVEAU : Proposer une solution alternative
+                        this.showNetworkErrorSolution();
+                        return;
+                    }
+                } else {
+                    this.networkErrorCount = 1; // Reset du compteur
+                }
+                this.lastNetworkError = now;
+                console.log(`⚠️ Timeout réseau (${this.networkErrorCount}/3) - redémarrage auto`);
                 return; // Ne pas afficher d'erreur à l'utilisateur
             case 'aborted':
                 return;

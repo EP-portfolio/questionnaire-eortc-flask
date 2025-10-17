@@ -365,8 +365,8 @@ class QuestionnaireManager {
                     const isFirefox = userAgent.includes('firefox');
 
                     // ✅ NOUVEAU : Délais séparés pour Chrome
-                    const displayDelay = isFirefox ? 500 : 2500; // Affichage : 0.5s Firefox, 2.5s Chrome
-                    const recognitionDelay = isFirefox ? 500 : 1500; // Reconnaissance : 0.5s Firefox, 1.5s Chrome
+                    const displayDelay = isFirefox ? 500 : 500; // Affichage : 0.5s Firefox, 0.5s Chrome
+                    const recognitionDelay = isFirefox ? 500 : 500; // Reconnaissance : 0.5s Firefox, 0.5s Chrome
 
                     console.log(`⏱️ Délai affichage: ${displayDelay}ms, Reconnaissance: ${recognitionDelay}ms (${isFirefox ? 'Firefox' : 'Chrome'})`);
 
@@ -592,6 +592,15 @@ class QuestionnaireManager {
     async markSessionComplete() {
         try {
             console.log('📝 Marquage de la session comme terminée...');
+
+            // ✅ NOUVEAU : Nettoyer la reconnaissance vocale avant de terminer
+            if (window.speechManager && typeof window.speechManager.cleanupRecognition === 'function') {
+                window.speechManager.cleanupRecognition();
+            }
+            if (window.fallbackManager && typeof window.fallbackManager.stopContinuousSpeech === 'function') {
+                window.fallbackManager.stopContinuousSpeech();
+            }
+
             const response = await fetch(`/api/complete_session/${this.sessionId}`, {
                 method: 'POST',
                 headers: {
