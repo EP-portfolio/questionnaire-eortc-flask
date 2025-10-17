@@ -336,10 +336,14 @@ class QuestionnaireManager {
                     // ✅ DÉLAI ADAPTATIF selon le navigateur
                     const userAgent = navigator.userAgent.toLowerCase();
                     const isFirefox = userAgent.includes('firefox');
-                    const delay = isFirefox ? 500 : 2500; // 0.5s Firefox, 2.5s Chrome
 
-                    console.log(`⏱️ Délai adaptatif: ${delay}ms (${isFirefox ? 'Firefox' : 'Chrome'})`);
+                    // ✅ NOUVEAU : Délais séparés pour Chrome
+                    const displayDelay = isFirefox ? 500 : 2500; // Affichage : 0.5s Firefox, 2.5s Chrome
+                    const recognitionDelay = isFirefox ? 500 : 1500; // Reconnaissance : 0.5s Firefox, 1.5s Chrome
 
+                    console.log(`⏱️ Délai affichage: ${displayDelay}ms, Reconnaissance: ${recognitionDelay}ms (${isFirefox ? 'Firefox' : 'Chrome'})`);
+
+                    // ✅ AFFICHAGE du message après le délai d'affichage
                     setTimeout(() => {
                         // Changer les boutons APRÈS le délai
                         this.toggleAudioButtons(false);
@@ -348,8 +352,10 @@ class QuestionnaireManager {
                             statusText.textContent = '✅ Lecture terminée - Vous pouvez répondre';
                             statusContainer.style.display = 'block'; // Afficher maintenant
                         }
+                    }, displayDelay);
 
-                        // ✅ REPRENDRE la reconnaissance vocale après le délai
+                    // ✅ REPRISE de la reconnaissance après le délai de reconnaissance
+                    setTimeout(() => {
                         if (window.speechManager) {
                             console.log('▶️ Reprise de la reconnaissance vocale');
                             window.speechManager.resumeRecognition();
@@ -360,7 +366,7 @@ class QuestionnaireManager {
                             console.log('🦊 Firefox : Redémarrage de l\'écoute continue');
                             window.fallbackManager.startContinuousSpeech();
                         }
-                    }, delay);
+                    }, recognitionDelay);
                 };
 
             } else {

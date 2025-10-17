@@ -102,8 +102,8 @@ class SpeechRecognitionManager {
 
                 console.log('DEBUG: Résultat', isFinal ? 'FINAL' : 'INTERIM', ':', transcript, 'Confiance:', confidence);
 
-                // ✅ AMÉLIORATION : Accepter résultats finaux OU intermédiaires avec haute confiance
-                if (isFinal || (confidence > 0.7 && transcript.length <= 20)) {
+                // ✅ AMÉLIORATION : Accepter résultats finaux OU intermédiaires avec confiance > 0
+                if (isFinal || (confidence > 0 && transcript.length <= 20)) {
                     this.handleSpeechResult(transcript, confidence);
                 }
             };
