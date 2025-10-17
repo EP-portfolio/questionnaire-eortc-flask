@@ -14,6 +14,10 @@ class QuestionnaireManager {
         this.currentAudio = null;
         // ✅ NOUVEAU : Flag pour éviter les appels multiples d'audio
         this.isPlayingAudio = false;
+        // ✅ NOUVEAU : Flag pour éviter les appels multiples d'affichage
+        this.isDisplayingQuestion = false;
+        // ✅ NOUVEAU : Flag pour gérer les transitions
+        this.isTransitioning = false;
 
         this.init();
     }
@@ -108,6 +112,15 @@ class QuestionnaireManager {
     }
 
     displayQuestion(question) {
+        // ✅ NOUVEAU : Éviter les appels multiples
+        if (this.isDisplayingQuestion) {
+            console.log('⏭️ Question déjà en cours d\'affichage, ignoré');
+            return;
+        }
+
+        this.isDisplayingQuestion = true;
+        this.isTransitioning = true;
+
         console.log('🔍 displayQuestion() appelé avec:', question);
 
         const questionNumber = document.getElementById('question-number');
@@ -133,6 +146,10 @@ class QuestionnaireManager {
         } else {
             console.error('❌ Élément question-speech-text non trouvé');
         }
+
+        // ✅ NOUVEAU : Reset des flags
+        this.isDisplayingQuestion = false;
+        this.isTransitioning = false;
     }
 
     createResponseButtons(question) {

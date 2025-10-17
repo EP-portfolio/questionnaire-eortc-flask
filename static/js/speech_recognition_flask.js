@@ -98,6 +98,12 @@ class SpeechRecognitionManager {
                     return;
                 }
 
+                // ✅ NOUVEAU : Vérifier si on est dans un délai de transition
+                if (window.questionnaireManager && window.questionnaireManager.isTransitioning) {
+                    console.log('⏸️ Transition en cours - Résultat ignoré');
+                    return;
+                }
+
                 console.log('DEBUG: onresult déclenché', event);
 
                 const last = event.results.length - 1;
@@ -211,6 +217,12 @@ class SpeechRecognitionManager {
 
         // Nettoyer le transcript
         const cleanTranscript = transcript.trim();
+
+        // ✅ NOUVEAU : Rejeter les chaînes vides ou avec seulement des espaces
+        if (!cleanTranscript || cleanTranscript.length === 0) {
+            console.log('⚠️ REJETÉ : Chaîne vide ou nulle');
+            return;
+        }
 
         // 1️⃣ FILTRE : Rejeter si le texte contient "question" suivi d'un chiffre
         const questionPattern = /question\s+\d+/i;
