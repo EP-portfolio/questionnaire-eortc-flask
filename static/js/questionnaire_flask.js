@@ -12,6 +12,8 @@ class QuestionnaireManager {
         this.questionData = null;
         this.isLoading = false;
         this.currentAudio = null;
+        // ✅ NOUVEAU : Flag pour éviter les appels multiples d'audio
+        this.isPlayingAudio = false;
 
         this.init();
     }
@@ -250,6 +252,14 @@ class QuestionnaireManager {
     }
 
     async playQuestionAudio() {
+        // ✅ NOUVEAU : Éviter les appels multiples
+        if (this.isPlayingAudio) {
+            console.log('⏭️ Audio déjà en cours de lecture, ignoré');
+            return;
+        }
+
+        this.isPlayingAudio = true;
+
         try {
             console.log(`📊 DEBUG: Tentative de lecture audio pour question ${this.currentQuestion}`);
 
@@ -401,6 +411,9 @@ class QuestionnaireManager {
             if (window.speechManager) {
                 window.speechManager.resumeRecognition();
             }
+        } finally {
+            // ✅ NOUVEAU : Reset du flag audio
+            this.isPlayingAudio = false;
         }
     }
 

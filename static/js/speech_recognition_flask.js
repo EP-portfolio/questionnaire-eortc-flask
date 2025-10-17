@@ -92,6 +92,12 @@ class SpeechRecognitionManager {
                     return; // Ignorer TOUS les résultats pendant la pause
                 }
 
+                // ✅ NOUVEAU : Ignorer les résultats pendant la lecture audio
+                if (window.questionnaireManager && window.questionnaireManager.isPlayingAudio) {
+                    console.log('⏸️ Audio en cours - Résultat ignoré');
+                    return;
+                }
+
                 console.log('DEBUG: onresult déclenché', event);
 
                 const last = event.results.length - 1;
@@ -102,8 +108,11 @@ class SpeechRecognitionManager {
 
                 console.log('DEBUG: Résultat', isFinal ? 'FINAL' : 'INTERIM', ':', transcript, 'Confiance:', confidence);
 
-                // ✅ AMÉLIORATION : Accepter résultats finaux OU intermédiaires avec confiance > 0
-                if (isFinal || (confidence > 0 && transcript.length <= 20)) {
+                // ✅ AMÉLIORATION : Prioriser les résultats finaux et améliorer la gestion des intermédiaires
+                if (isFinal) {
+                    this.handleSpeechResult(transcript, confidence);
+                } else if (confidence > 0.5 && transcript.length <= 20) {
+                    // Seulement les résultats intermédiaires avec bonne confiance
                     this.handleSpeechResult(transcript, confidence);
                 }
             };
@@ -227,7 +236,7 @@ class SpeechRecognitionManager {
         // }
 
         // ✅ NOUVEAU : Filtre spécial pour les réponses courtes valides
-        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
+        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'pas', 'peu', 'tout'];
         if (cleanTranscript.length <= 3 && !shortValidResponses.includes(cleanTranscript.toLowerCase())) {
             console.log('⚠️ REJETÉ : Texte trop court et non reconnu comme réponse valide');
             return;
