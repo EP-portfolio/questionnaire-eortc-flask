@@ -443,6 +443,9 @@ class FallbackRecognitionManager {
         this.isListening = false;
         this.isPaused = false;
         this.processingResponse = false;
+        // ✅ NOUVEAU : Compteur d'erreurs consécutives pour éviter les boucles infinies
+        this.consecutiveErrors = 0;
+        this.maxConsecutiveErrors = 5; // Arrêter après 5 erreurs consécutives
     }
 
     init() {
@@ -596,8 +599,27 @@ class FallbackRecognitionManager {
         const hasSpeech = await this.detectSpeech(audioBlob);
         if (!hasSpeech) {
             console.log('🔇 Chunk silencieux ignoré');
+            // ✅ NOUVEAU : Incrémenter le compteur d'erreurs
+            this.consecutiveErrors++;
+
+            // ✅ NOUVEAU : Arrêter temporairement si trop d'erreurs consécutives
+            if (this.consecutiveErrors >= this.maxConsecutiveErrors) {
+                console.log('🛑 Trop d\'erreurs consécutives - Arrêt temporaire de l\'écoute');
+                this.stopContinuousSpeech();
+
+                // ✅ Redémarrer après 3 secondes
+                setTimeout(() => {
+                    console.log('🔄 Redémarrage après pause d\'erreurs');
+                    this.consecutiveErrors = 0; // Reset le compteur
+                    this.startContinuousSpeech();
+                }, 3000);
+                return;
+            }
             return;
         }
+
+        // ✅ NOUVEAU : Reset le compteur d'erreurs si succès
+        this.consecutiveErrors = 0;
 
         try {
             console.log('🦊 Firefox : Transcription chunk audio avec parole détectée');
@@ -609,6 +631,8 @@ class FallbackRecognitionManager {
 
         } catch (error) {
             console.error('❌ Erreur transcription chunk:', error);
+            // ✅ NOUVEAU : Incrémenter aussi les erreurs de transcription
+            this.consecutiveErrors++;
         }
     }
 
