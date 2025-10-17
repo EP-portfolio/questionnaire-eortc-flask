@@ -500,6 +500,55 @@ class QuestionnaireManager {
             notification.remove();
         }, 3000);
     }
+
+    showSuggestions(suggestions) {
+        console.log('💡 Suggestions:', suggestions);
+
+        // Supprimer les anciennes suggestions
+        const existingSuggestions = document.querySelector('.suggestions-notification');
+        if (existingSuggestions) {
+            existingSuggestions.remove();
+        }
+
+        if (!suggestions || suggestions.length === 0) {
+            return;
+        }
+
+        const notification = document.createElement('div');
+        notification.className = 'suggestions-notification';
+
+        const suggestionsHtml = suggestions.map(s => `<li>${s}</li>`).join('');
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-lightbulb"></i>
+                <span>Suggestions de réponses :</span>
+                <ul style="margin: 0.5rem 0 0 0; padding-left: 1rem;">
+                    ${suggestionsHtml}
+                </ul>
+            </div>
+        `;
+
+        notification.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            max-width: 300px;
+            word-wrap: break-word;
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 8000); // Plus long pour laisser le temps de lire
+    }
 }
 
 // Fonctions globales pour l'interface

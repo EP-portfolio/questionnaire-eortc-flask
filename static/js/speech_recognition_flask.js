@@ -635,9 +635,23 @@ class FallbackRecognitionManager {
                 return false; // Considérer comme silencieux
             }
 
+            // ✅ CORRECTION : Vérifier que le buffer est valide
+            if (!audioBuffer || !audioBuffer.getChannelData) {
+                console.log('🔇 Buffer audio invalide');
+                audioContext.close();
+                return false;
+            }
+
             // Analyser les données audio
             const channelData = audioBuffer.getChannelData(0);
             const length = channelData.length;
+
+            // ✅ CORRECTION : Vérifier que les données audio existent
+            if (!channelData || length === 0) {
+                console.log('🔇 Données audio vides');
+                audioContext.close();
+                return false;
+            }
 
             // Calculer le volume RMS (Root Mean Square)
             let sum = 0;
@@ -656,9 +670,9 @@ class FallbackRecognitionManager {
             return hasSpeech;
 
         } catch (error) {
-            console.warn('⚠️ Erreur détection parole:', error);
-            // En cas d'erreur, considérer qu'il y a de la parole pour éviter de perdre des réponses
-            return true;
+            console.log('🔇 Erreur analyse audio:', error.message);
+            // ✅ CORRECTION : Retourner false au lieu de true pour éviter les chunks corrompus
+            return false;
         }
     }
 
@@ -705,12 +719,28 @@ class FallbackRecognitionManager {
 
     // ✅ MÉTHODE FALLBACK : Transcription avec serveur
     // ✅ FEEDBACK VISUEL Firefox (corrigé)
-    showVisualFeedback(transcript) {
+    showVisualFeedback(transcript, type = 'success') {
         // Supprimer les anciens feedbacks
         const existingFeedback = document.querySelector('.firefox-feedback');
         if (existingFeedback) {
             existingFeedback.remove();
         }
+
+        // ✅ NOUVEAU : Couleurs différentes selon le type
+        const colors = {
+            success: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+            error: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)'
+        };
+
+        const icons = {
+            success: 'fas fa-check-circle',
+            error: 'fas fa-times-circle'
+        };
+
+        const messages = {
+            success: 'Reconnu',
+            error: 'Non reconnu'
+        };
 
         // Créer un élément de feedback visuel
         const feedback = document.createElement('div');
@@ -719,7 +749,7 @@ class FallbackRecognitionManager {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            background: ${colors[type] || colors.success};
             color: white;
             padding: 12px 18px;
             border-radius: 8px;
@@ -734,8 +764,8 @@ class FallbackRecognitionManager {
 
         feedback.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-microphone" style="color: #fff; font-size: 16px;"></i>
-                <span><strong>Firefox:</strong> "${transcript}"</span>
+                <i class="${icons[type] || icons.success}" style="color: #fff; font-size: 16px;"></i>
+                <span><strong>Firefox:</strong> "${transcript}" - ${messages[type] || messages.success}</span>
             </div>
         `;
 
@@ -819,8 +849,8 @@ class FallbackRecognitionManager {
                     return;
                 }
 
-                // ✅ FEEDBACK VISUEL Firefox
-                this.showVisualFeedback(transcript);
+                // ✅ SUPPRIMER : Ne plus afficher le feedback visuel ici
+                // this.showVisualFeedback(transcript);
 
                 this.handleSpeechResult(transcript);
             } else if (result.success && result.fallback) {
@@ -853,17 +883,20 @@ class FallbackRecognitionManager {
             return;
         }
 
-        // ✅ CORRECTION : Supprimer le filtre de longueur minimale pour accepter "7"
-        // Ancien code supprimé :
-        // if (text.length < 2) {
-        //     console.log('⚠️ REJETÉ : Texte trop court');
-        //     return;
-        // }
+        // ✅ SIMPLIFICATION : Filtre basique pour éviter les réponses parasites
+        // Ne pas rejeter les réponses côté client, laisser le serveur décider
+        // Seulement filtrer les réponses vraiment parasites
 
-        // ✅ NOUVEAU : Filtre spécial pour les réponses courtes valides
-        const shortValidResponses = ['1', '2', '3', '4', '5', '6', '7', 'un', 'une', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
-        if (text.length <= 3 && !shortValidResponses.includes(text)) {
-            console.log('⚠️ REJETÉ : Texte trop court et non reconnu comme réponse valide');
+        // Rejeter les réponses trop longues (probablement des phrases complètes)
+        if (text.length > 20) {
+            console.log('⚠️ REJETÉ : Texte trop long (probablement une phrase complète)');
+            return;
+        }
+
+        // Rejeter les réponses qui contiennent des mots de navigation
+        const navigationWords = ['question', 'suivant', 'précédent', 'retour', 'passer', 'ignorer'];
+        if (navigationWords.some(word => text.includes(word))) {
+            console.log('⚠️ REJETÉ : Contient des mots de navigation');
             return;
         }
 
@@ -901,9 +934,9 @@ class FallbackRecognitionManager {
 
             if (result.valid) {
                 console.log('✅ Réponse validée:', result.response_text);
-                // ✅ AFFICHAGE SUCCÈS Firefox (supprimer l'affichage double)
-                // L'affichage est déjà géré par SpeechRecognitionManager pour Chrome/Edge
-                // Pas besoin d'afficher deux fois sur Firefox
+
+                // ✅ NOUVEAU : Afficher le signet vert pour les réponses valides
+                this.showVisualFeedback(transcript, 'success');
 
                 if (result.is_complete) {
                     setTimeout(() => {
@@ -916,10 +949,16 @@ class FallbackRecognitionManager {
                 }
             } else {
                 console.log('❌ Réponse non reconnue');
+
+                // ✅ NOUVEAU : Afficher le signet rouge pour les réponses erronées
+                this.showVisualFeedback(transcript, 'error');
+
                 // ✅ AFFICHAGE ERREUR Firefox
                 if (window.questionnaireManager) {
-                    window.questionnaireManager.showError(result.error || 'Réponse non reconnue');
-                    if (result.suggestions) {
+                    if (typeof window.questionnaireManager.showError === 'function') {
+                        window.questionnaireManager.showError(result.error || 'Réponse non reconnue');
+                    }
+                    if (result.suggestions && typeof window.questionnaireManager.showSuggestions === 'function') {
                         window.questionnaireManager.showSuggestions(result.suggestions);
                     }
                 }
@@ -938,9 +977,15 @@ class FallbackRecognitionManager {
 
         } catch (error) {
             console.error('❌ Erreur traitement réponse:', error);
+
+            // ✅ NOUVEAU : Afficher le signet rouge pour les erreurs
+            this.showVisualFeedback(transcript, 'error');
+
             // ✅ AFFICHAGE ERREUR Firefox pour les erreurs réseau
             if (window.questionnaireManager) {
-                window.questionnaireManager.showError('Erreur : Impossible de traiter la réponse');
+                if (typeof window.questionnaireManager.showError === 'function') {
+                    window.questionnaireManager.showError('Erreur : Impossible de traiter la réponse');
+                }
             }
 
             // ✅ REDÉMARRER l'écoute Firefox après erreur réseau (1 seconde)
