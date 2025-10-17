@@ -213,6 +213,8 @@ class QuestionnaireManager {
                 this.showResponseConfirmation(result.response_text, 'Manuel');
 
                 if (result.is_complete) {
+                    // ✅ NOUVEAU : Marquer la session comme terminée avant redirection
+                    this.markSessionComplete();
                     setTimeout(() => {
                         window.location.href = `/resultat/${this.sessionId}`;
                     }, 2000);
@@ -548,6 +550,27 @@ class QuestionnaireManager {
         setTimeout(() => {
             notification.remove();
         }, 8000); // Plus long pour laisser le temps de lire
+    }
+
+    // ✅ NOUVELLE FONCTION : Marquer la session comme terminée
+    async markSessionComplete() {
+        try {
+            console.log('📝 Marquage de la session comme terminée...');
+            const response = await fetch(`/api/complete_session/${this.sessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                console.log('✅ Session marquée comme terminée');
+            } else {
+                console.error('❌ Erreur marquage session:', response.statusText);
+            }
+        } catch (error) {
+            console.error('❌ Erreur marquage session:', error);
+        }
     }
 }
 

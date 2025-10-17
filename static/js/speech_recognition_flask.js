@@ -172,6 +172,27 @@ class SpeechRecognitionManager {
         console.log('Écoute continue arrêtée');
     }
 
+    // ✅ NOUVELLE FONCTION : Marquer la session comme terminée
+    async markSessionComplete() {
+        try {
+            console.log('📝 Marquage de la session comme terminée...');
+            const response = await fetch(`/api/complete_session/${window.sessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                console.log('✅ Session marquée comme terminée');
+            } else {
+                console.error('❌ Erreur marquage session:', response.statusText);
+            }
+        } catch (error) {
+            console.error('❌ Erreur marquage session:', error);
+        }
+    }
+
     handleSpeechResult(transcript, confidence) {
         console.log('DEBUG: handleSpeechResult appelé avec:', transcript);
 
@@ -303,6 +324,8 @@ class SpeechRecognitionManager {
                 this.showSuccess(result.response_text);
 
                 if (result.is_complete) {
+                    // ✅ NOUVEAU : Marquer la session comme terminée avant redirection
+                    this.markSessionComplete();
                     setTimeout(() => {
                         window.location.href = `/resultat/${window.sessionId}`;
                     }, 2000);
@@ -580,6 +603,27 @@ class FallbackRecognitionManager {
         if (this.audioStream) {
             this.audioStream.getTracks().forEach(track => track.stop());
             this.audioStream = null;
+        }
+    }
+
+    // ✅ NOUVELLE FONCTION : Marquer la session comme terminée
+    async markSessionComplete() {
+        try {
+            console.log('📝 Marquage de la session comme terminée...');
+            const response = await fetch(`/api/complete_session/${window.sessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                console.log('✅ Session marquée comme terminée');
+            } else {
+                console.error('❌ Erreur marquage session:', response.statusText);
+            }
+        } catch (error) {
+            console.error('❌ Erreur marquage session:', error);
         }
     }
 
@@ -972,6 +1016,8 @@ class FallbackRecognitionManager {
                 this.showVisualFeedback(transcript, 'success');
 
                 if (result.is_complete) {
+                    // ✅ NOUVEAU : Marquer la session comme terminée avant redirection
+                    this.markSessionComplete();
                     setTimeout(() => {
                         window.location.href = `/resultat/${window.sessionId}`;
                     }, 1500);
