@@ -154,6 +154,7 @@ class SpeechRecognitionManager {
                     return;
                 }
 
+
                 console.log('DEBUG: onresult déclenché', event);
 
                 // ✅ NOUVEAU : Reset du compteur d'erreurs réseau quand ça fonctionne
