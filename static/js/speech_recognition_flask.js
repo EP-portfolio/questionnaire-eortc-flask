@@ -445,7 +445,7 @@ class FallbackRecognitionManager {
         this.processingResponse = false;
         // ✅ NOUVEAU : Compteur d'erreurs consécutives pour éviter les boucles infinies
         this.consecutiveErrors = 0;
-        this.maxConsecutiveErrors = 5; // Arrêter après 5 erreurs consécutives
+        this.maxConsecutiveErrors = 2; // Arrêter après 2 erreurs consécutives
     }
 
     init() {
@@ -607,6 +607,9 @@ class FallbackRecognitionManager {
                 console.log('🛑 Trop d\'erreurs consécutives - Arrêt temporaire de l\'écoute');
                 this.stopContinuousSpeech();
 
+                // ✅ AFFICHAGE : Message de redémarrage
+                this.showVisualFeedback('Redémarrage écoute en cours...', 'info');
+
                 // ✅ Redémarrer après 3 secondes
                 setTimeout(() => {
                     console.log('🔄 Redémarrage après pause d\'erreurs');
@@ -753,17 +756,20 @@ class FallbackRecognitionManager {
         // ✅ NOUVEAU : Couleurs différentes selon le type
         const colors = {
             success: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-            error: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)'
+            error: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+            info: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)'
         };
 
         const icons = {
             success: 'fas fa-check-circle',
-            error: 'fas fa-times-circle'
+            error: 'fas fa-times-circle',
+            info: 'fas fa-info-circle'
         };
 
         const messages = {
             success: 'Reconnu',
-            error: 'Non reconnu'
+            error: 'Non reconnu',
+            info: ''
         };
 
         // Créer un élément de feedback visuel
@@ -786,10 +792,13 @@ class FallbackRecognitionManager {
             word-wrap: break-word;
         `;
 
+        // ✅ NOUVEAU : Gestion spéciale pour le type 'info'
+        const displayText = type === 'info' ? transcript : `"${transcript}" - ${messages[type] || messages.success}`;
+
         feedback.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
                 <i class="${icons[type] || icons.success}" style="color: #fff; font-size: 16px;"></i>
-                <span><strong>Firefox:</strong> "${transcript}" - ${messages[type] || messages.success}</span>
+                <span><strong>Firefox:</strong> ${displayText}</span>
             </div>
         `;
 
