@@ -18,6 +18,8 @@ class QuestionnaireManager {
         this.isDisplayingQuestion = false;
         // ✅ NOUVEAU : Flag pour gérer les transitions
         this.isTransitioning = false;
+        // ✅ NOUVEAU : Vitesse de lecture (chargée depuis localStorage ou défaut)
+        this.playbackSpeed = parseFloat(localStorage.getItem('playback_speed')) || 1.2;
 
         this.init();
     }
@@ -53,9 +55,24 @@ class QuestionnaireManager {
         window.currentQuestion = this.currentQuestion;
         window.loadQuestion = (num) => this.loadQuestion(num);
 
+        // ✅ Initialiser le contrôle de vitesse
+        this.initSpeedControl();
+
         // ✅ NE PAS charger automatiquement - laissons Q0 se charger d'abord
         // this.loadQuestion(this.currentQuestion);
         console.log('✅ QuestionnaireManager initialisé - en attente Q0');
+    }
+
+    initSpeedControl() {
+        // Initialiser le slider avec la vitesse sauvegardée
+        const speedSlider = document.getElementById('speed-slider');
+        const speedDisplay = document.getElementById('speed-display');
+
+        if (speedSlider && speedDisplay) {
+            speedSlider.value = this.playbackSpeed;
+            speedDisplay.textContent = `${this.playbackSpeed}x`;
+            console.log(`🎛️ Contrôle de vitesse initialisé: ${this.playbackSpeed}x`);
+        }
     }
 
     async loadQuestion(questionNum) {
@@ -199,15 +216,12 @@ class QuestionnaireManager {
 
     updateNavigationButtons() {
         const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
 
         if (prevBtn) {
             prevBtn.disabled = this.currentQuestion <= 1;
         }
 
-        if (nextBtn) {
-            nextBtn.disabled = this.currentQuestion >= 30;
-        }
+        // Bouton Suivante retiré - navigation automatique uniquement après réponse
     }
 
     async selectManualResponse(score) {
@@ -317,10 +331,10 @@ class QuestionnaireManager {
                 this.currentAudio = new Audio(audioUrl);
 
                 // ============================================
-                // 🚀 ACCÉLÉRATION AUDIO DE 20%
+                // 🎛️ VITESSE DE LECTURE CONFIGURABLE
                 // ============================================
-                this.currentAudio.playbackRate = 1.2;
-                console.log('🚀 Vitesse de lecture: 1.2x (accélération de 20%)');
+                this.currentAudio.playbackRate = this.playbackSpeed;
+                console.log(`🎛️ Vitesse de lecture: ${this.playbackSpeed}x`);
                 // ============================================
 
                 this.currentAudio.onerror = (e) => {
@@ -471,11 +485,17 @@ class QuestionnaireManager {
 
     toggleAudioButtons(playing) {
         const playBtn = document.getElementById('play-audio-btn');
-        const stopBtn = document.getElementById('stop-audio-btn');
+        const waitingText = document.getElementById('audio-waiting-text');
+        const speedControl = document.getElementById('audio-speed-control');
 
-        if (playBtn && stopBtn) {
+        if (playBtn && waitingText) {
             playBtn.style.display = playing ? 'none' : 'inline-block';
-            stopBtn.style.display = playing ? 'inline-block' : 'none';
+            waitingText.style.display = playing ? 'block' : 'none';
+
+            // ✅ Afficher le contrôle de vitesse pendant la lecture
+            if (speedControl) {
+                speedControl.style.display = playing ? 'block' : 'none';
+            }
         }
     }
 
@@ -507,6 +527,25 @@ class QuestionnaireManager {
         setTimeout(() => {
             notification.remove();
         }, 5000);
+    }
+
+    updatePlaybackSpeed(speed) {
+        this.playbackSpeed = parseFloat(speed);
+
+        // ✅ Sauvegarder la préférence de vitesse
+        localStorage.setItem('playback_speed', speed);
+
+        // Mettre à jour l'affichage
+        const speedDisplay = document.getElementById('speed-display');
+        if (speedDisplay) {
+            speedDisplay.textContent = `${speed}x`;
+        }
+
+        // Appliquer immédiatement si l'audio est en cours
+        if (this.currentAudio) {
+            this.currentAudio.playbackRate = this.playbackSpeed;
+            console.log(`🎛️ Vitesse mise à jour: ${speed}x`);
+        }
     }
 
     showSuccess(message) {
@@ -626,11 +665,7 @@ function previousQuestion() {
     }
 }
 
-function nextQuestion() {
-    if (window.questionnaireManager && window.questionnaireManager.currentQuestion < 30) {
-        window.questionnaireManager.loadQuestion(window.questionnaireManager.currentQuestion + 1);
-    }
-}
+// Fonction nextQuestion() supprimée - navigation automatique uniquement après réponse
 
 function playQuestionAudio() {
     if (window.questionnaireManager) {
@@ -638,11 +673,14 @@ function playQuestionAudio() {
     }
 }
 
-function stopAudio() {
+// ✅ Fonction globale pour le contrôle de vitesse
+function updatePlaybackSpeed(speed) {
     if (window.questionnaireManager) {
-        window.questionnaireManager.stopAudio();
+        window.questionnaireManager.updatePlaybackSpeed(speed);
     }
 }
+
+// Fonction stopAudio() supprimée - l'utilisateur doit attendre la fin de l'audio
 
 // ✅ Fonction pour arrêter l'audio quand l'utilisateur commence à parler
 function stopAudioOnSpeech() {
@@ -652,6 +690,19 @@ function stopAudioOnSpeech() {
         window.questionnaireManager.currentAudio.pause();
         window.questionnaireManager.currentAudio = null;
         window.questionnaireManager.toggleAudioButtons(false);
+
+        // ✅ Masquer le texte d'attente et le contrôle de vitesse
+        const waitingText = document.getElementById('audio-waiting-text');
+        const speedControl = document.getElementById('audio-speed-control');
+        const statusContainer = document.getElementById('audio-status');
+        const statusText = document.getElementById('audio-status-text');
+
+        if (waitingText) waitingText.style.display = 'none';
+        if (speedControl) speedControl.style.display = 'none';
+        if (statusText && statusContainer) {
+            statusText.textContent = '✅ Lecture interrompue - Vous pouvez répondre';
+            statusContainer.style.display = 'block';
+        }
     }
 }
 

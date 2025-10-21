@@ -21,10 +21,11 @@
                 <i class="fas fa-arrow-left"></i>
                 Précédente
             </button>
-            <button class="nav-btn" id="next-btn" onclick="nextQuestion()" disabled>
-                Suivante
-                <i class="fas fa-arrow-right"></i>
-            </button>
+            <!-- 
+                Bouton "Suivante" retiré pour empêcher l'utilisateur de passer 
+                à la question suivante sans répondre. La navigation se fait 
+                automatiquement après chaque réponse (vocale ou manuelle).
+            -->
         </div>
     </div>
 
@@ -130,11 +131,36 @@
                 <i class="fas fa-volume-up"></i>
                 Écouter la question
             </button>
-            <button class="audio-btn" id="stop-audio-btn" onclick="stopAudio()"
-                style="display: none; font-size: 1.3rem; padding: 1.2rem 2.5rem; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
-                <i class="fas fa-stop"></i>
-                Arrêter l'audio
-            </button>
+
+            <!-- 
+                Texte informatif remplaçant le bouton "Arrêter l'audio".
+                Ce texte apparaît pendant la lecture et disparaît automatiquement 
+                à la fin de l'audio ou si l'utilisateur commence à parler.
+            -->
+            <div id="audio-waiting-text"
+                style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 8px; color: white; font-size: 1.1rem; font-weight: 500; line-height: 1.6;">
+                <i class="fas fa-clock" style="margin-right: 0.5rem;"></i>
+                Attendre la fin de l'audio pour répondre oralement ou répondre manuellement avec les boutons ci-dessous
+            </div>
+
+            <!-- Contrôle de vitesse de lecture -->
+            <div class="audio-speed-control" id="audio-speed-control" style="display: none; margin-top: 1rem;">
+                <div class="speed-control-wrapper"
+                    style="display: flex; align-items: center; gap: 1rem; color: white; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                    <label for="speed-slider"
+                        style="font-size: 1rem; font-weight: 500; display: flex; align-items: center;">
+                        <i class="fas fa-tachometer-alt" style="margin-right: 0.5rem; color: #FFD700;"></i>
+                        Vitesse :
+                    </label>
+                    <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.2"
+                        style="flex: 1; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; outline: none; cursor: pointer;"
+                        oninput="updatePlaybackSpeed(this.value)">
+                    <span id="speed-display"
+                        style="font-size: 1rem; font-weight: bold; min-width: 3rem; background: rgba(255,255,255,0.2); padding: 0.3rem 0.8rem; border-radius: 4px; text-align: center;">
+                        1.2x
+                    </span>
+                </div>
+            </div>
 
             <div id="audio-status"
                 style="margin-top: 1rem; color: white; font-size: 1rem; font-weight: 500; display: none;">
@@ -653,11 +679,7 @@
         }
     }
 
-    function nextQuestion() {
-        if (window.questionnaireManager) {
-            window.questionnaireManager.loadQuestion(window.questionnaireManager.currentQuestion + 1);
-        }
-    }
+    // Fonction nextQuestion() supprimée - navigation automatique uniquement après réponse
 
     function playQuestionAudio() {
         if (window.questionnaireManager) {
@@ -665,19 +687,7 @@
         }
     }
 
-    function stopAudio() {
-        console.log('🔇 Arrêt audio demandé');
-
-        // Arrêter l'audio de la question
-        if (window.questionnaireManager) {
-            window.questionnaireManager.stopAudio();
-        }
-
-        // ✅ NOUVEAU : Gestion intelligente de la reconnaissance vocale
-        if (window.handleAudioStop) {
-            window.handleAudioStop();
-        }
-    }
+    // Fonction stopAudio() supprimée - l'utilisateur doit attendre la fin de l'audio
 </script>
 
 <style>

@@ -692,6 +692,8 @@ body {
 .navigation-buttons {
     display: flex;
     gap: var(--spacing-md);
+    justify-content: flex-start;
+    /* Aligner le bouton Précédente à gauche */
 }
 
 .nav-btn {
@@ -714,6 +716,134 @@ body {
 .nav-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Styles pour le texte d'attente audio */
+#audio-waiting-text {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 500;
+    line-height: 1.6;
+    text-align: center;
+    transition: all 0.3s ease;
+    animation: pulse 2s infinite;
+}
+
+#audio-waiting-text i {
+    color: #FFD700;
+    margin-right: 0.5rem;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.8;
+    }
+}
+
+/* Styles pour le contrôle de vitesse de lecture */
+.audio-speed-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+    animation: slideInFromBottom 0.3s ease-out;
+}
+
+.speed-control-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+}
+
+#speed-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    height: 6px;
+    flex: 1;
+}
+
+#speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #FFD700;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+#speed-slider::-webkit-slider-thumb:hover {
+    background: #FFA500;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+#speed-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #FFD700;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+#speed-slider::-moz-range-thumb:hover {
+    background: #FFA500;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+#speed-display {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    font-weight: bold;
+    min-width: 3rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+#speed-display:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+/* Animation pour le contrôle de vitesse */
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Question container */
